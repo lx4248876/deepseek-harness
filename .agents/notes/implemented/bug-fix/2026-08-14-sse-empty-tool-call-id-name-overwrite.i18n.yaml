@@ -1,0 +1,6 @@
+# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
+# side as of the last confirmed-consistent state. Both languages carry equal authority;
+# after editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-08-14-sse-empty-tool-call-id-name-overwrite.md
+2026-08-14-sse-empty-tool-call-id-name-overwrite.md: c04ec067515f7ac0af383b8de5cf2060de061551
+2026-08-14-sse-empty-tool-call-id-name-overwrite.zh.md: 00ad18c904226bbdc9c3a08c396f181dc84b73b8

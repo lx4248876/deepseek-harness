@@ -156,8 +156,14 @@ export async function* translate(payloads: AsyncIterable<string>): AsyncGenerato
           toolBlocks.set(call.index, block)
           yield { type: 'block-start', index: block.index, blockType: 'tool-call' }
         }
-        if (call.id !== undefined) block.callId = call.id
-        if (call.function?.name !== undefined) block.name = call.function.name
+        // Presence guards treat empty strings as absent: some OpenAI-compatible
+        // gateways overwrite the opening chunk's id/name with "" on every
+        // subsequent delta (deviating from the spec, which elides them after
+        // the first chunk). Overwriting a good first-chunk value with "" would
+        // collapse the assembled call to an empty name. Truthy guards keep the
+        // first-present value while staying correct for spec-compliant feeds.
+        if (call.id) block.callId = call.id
+        if (call.function?.name) block.name = call.function.name
         const fragment = call.function?.arguments ?? ''
         block.text += fragment
         yield {

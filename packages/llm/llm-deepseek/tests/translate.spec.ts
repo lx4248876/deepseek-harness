@@ -347,4 +347,26 @@ describe('translate: defensive tool-call branches', () => {
     )))
     expect(chunks[1]).toEqual({ type: 'tool-call-delta', index: 0, id: 'c', argumentsDelta: '' })
   })
+
+  it('keeps the first-chunk id/name when later deltas overwrite with empty strings', async () => {
+    const chunks = await collect(translate(feed(
+      firstChunk,
+      // Some OpenAI-compatible gateways repeat id/name as "" on every delta
+      // after the first chunk (deviating from the spec, which elides them).
+      // Empty-string overwrites must not discard the opening chunk's values.
+      { choices: [{ delta: { tool_calls: [{ index: 0, id: 'call_x', type: 'function', function: { name: 'bash', arguments: '' } }] } }] },
+      { choices: [{ delta: { tool_calls: [{ index: 0, id: '', function: { name: '', arguments: '{"cmd": ' } }] } }] },
+      { choices: [{ delta: { tool_calls: [{ index: 0, id: '', function: { name: '', arguments: '"pwd"}' } }] } }] },
+      { choices: [{ delta: {}, finish_reason: 'tool_calls' }] },
+      DONE,
+    )))
+    expect(chunks).toEqual([
+      { type: 'block-start', index: 0, blockType: 'tool-call' },
+      { type: 'tool-call-delta', index: 0, id: 'call_x', name: 'bash', argumentsDelta: '' },
+      { type: 'tool-call-delta', index: 0, id: 'call_x', name: 'bash', argumentsDelta: '{"cmd": ' },
+      { type: 'tool-call-delta', index: 0, id: 'call_x', name: 'bash', argumentsDelta: '"pwd"}' },
+      { type: 'block-end', index: 0, block: { type: 'tool-call', id: 'call_x', name: 'bash', arguments: '{"cmd": "pwd"}' } },
+      { type: 'finish', reason: { kind: 'tool-calls' } },
+    ])
+  })
 })
