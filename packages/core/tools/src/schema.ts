@@ -459,12 +459,16 @@ export function parameterSchemaSpecToJsonSchema(spec: ParameterSchemaSpec): Para
 
 /** Invalid model-generated arguments for a typed tool. */
 export class ToolArgsError extends HarnessError {
+  /** Name of the tool that rejected the arguments. */
+  readonly toolName: string
+
   /** Individual violations in schema-walk order. */
   readonly violations: string[]
 
-  constructor(violations: string[]) {
-    super(`invalid arguments: ${violations.join('; ')}`, 'INVALID_ARGS')
+  constructor(toolName: string, violations: string[]) {
+    super(`invalid arguments for ${toolName}: ${violations.join('; ')}`, 'INVALID_ARGS')
     this.name = 'ToolArgsError'
+    this.toolName = toolName
     this.violations = violations
   }
 }
@@ -584,7 +588,7 @@ export function defineTool<const S extends ParameterSchemaSpec, const O extends 
     ...(options.timeoutMs !== undefined ? { timeoutMs: options.timeoutMs } : {}),
     async execute(args: unknown, exec: ToolRunContext): Promise<JsonValue> {
       const violations = validate(args)
-      if (violations.length > 0) throw new ToolArgsError(violations)
+      if (violations.length > 0) throw new ToolArgsError(options.name, violations)
       return userExecute(args as InferArgs<S>, exec) as Promise<JsonValue>
     },
   }

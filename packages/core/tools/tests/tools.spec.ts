@@ -2587,7 +2587,7 @@ describe('defineTool validation (the runtime-validation Agent Note, part 1)', ()
     const result = await ctx.tools.execute({ signal: testToolSignal, callId: ToolCallId('c1'), name: 'reader', arguments: {} })
     expect(result.isError).toBe(true)
     expect(result.content[0]).toMatchObject({
-      text: 'Error: invalid arguments: missing required property "path"',
+      text: 'Error: invalid arguments for reader: missing required property "path"',
     })
   })
 
@@ -2609,13 +2609,37 @@ describe('defineTool validation (the runtime-validation Agent Note, part 1)', ()
     })
   })
 
-  it('ToolArgsError carries a stable code and the violation list', () => {
-    const err = new ToolArgsError(['missing required property "a"', '"b" must be a number'])
+  it('ToolArgsError carries the tool name, a stable code and the violation list', () => {
+    const err = new ToolArgsError('my_tool', ['missing required property "a"', '"b" must be a number'])
     expect(err).toBeInstanceOf(Error)
     expect(err.name).toBe('ToolArgsError')
+    expect(err.toolName).toBe('my_tool')
     expect(err.code).toBe('INVALID_ARGS')
     expect(err.violations).toEqual(['missing required property "a"', '"b" must be a number'])
-    expect(err.message).toBe('invalid arguments: missing required property "a"; "b" must be a number')
+    expect(err.message).toBe('invalid arguments for my_tool: missing required property "a"; "b" must be a number')
+  })
+
+  it('Tools sharing a required field name produce distinguishable errors (postmortem 0005)', async () => {
+    const ctx = await setup()
+    const names = ['one', 'two']
+    for (const name of names) {
+      ctx.tools.register(defineContentToolFixture({
+        name,
+        description: `runs ${name}`,
+        parameters: { description: { type: 'string', required: true }, command: { type: 'string', required: true } },
+        async execute(args) {
+          return [{ type: 'text', text: args.command }]
+        },
+      }))
+    }
+    const results = await Promise.all(names.map(name =>
+      ctx.tools.execute({ signal: testToolSignal, callId: ToolCallId(name), name, arguments: { command: 'ls' } }),
+    ))
+    const first = results[0]!
+    const second = results[1]!
+    expect(first.error!.message).toContain('invalid arguments for one')
+    expect(second.error!.message).toContain('invalid arguments for two')
+    expect(first.error!.message).not.toBe(second.error!.message)
   })
 
   it('a schema-invalid call surfaces the structured error on the result', async () => {
@@ -2631,7 +2655,7 @@ describe('defineTool validation (the runtime-validation Agent Note, part 1)', ()
     const result = await ctx.tools.execute({ signal: testToolSignal, callId: ToolCallId('c1'), name: 'reader', arguments: {} })
     expect(result.isError).toBe(true)
     expect(result.error).toEqual({
-      message: 'invalid arguments: missing required property "path"',
+      message: 'invalid arguments for reader: missing required property "path"',
       info: { name: 'ToolArgsError', code: 'INVALID_ARGS' },
     })
   })
