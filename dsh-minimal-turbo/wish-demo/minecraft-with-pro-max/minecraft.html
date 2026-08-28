@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>我的世界 · Web 版</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; overflow: hidden; background: #87ceeb; font-family: "Segoe UI", "Microsoft YaHei", sans-serif; }
+  canvas { display: block; }
+
+  #blocker {
+    position: fixed; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(0, 0, 0, 0.55);
+    z-index: 20; cursor: pointer; user-select: none;
+  }
+  #instructions {
+    background: rgba(20, 20, 20, 0.88);
+    border: 2px solid #6b6b6b;
+    border-radius: 10px;
+    color: #fff; padding: 28px 36px; max-width: 560px;
+    text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,.5);
+  }
+  #instructions h1 { font-size: 30px; margin-bottom: 6px; letter-spacing: 2px; }
+  #instructions .sub { color: #9fd37b; margin-bottom: 16px; font-size: 14px; }
+  #instructions table { margin: 0 auto; border-collapse: collapse; font-size: 14px; }
+  #instructions td { padding: 5px 10px; text-align: left; color: #ddd; }
+  #instructions td:first-child { text-align: right; color: #ffe08a; font-weight: 600; }
+  #instructions .click { margin-top: 18px; font-size: 18px; color: #fff; animation: pulse 1.2s infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.45; } }
+
+  #crosshair {
+    position: fixed; left: 50%; top: 50%;
+    width: 22px; height: 22px;
+    transform: translate(-50%, -50%);
+    z-index: 10; pointer-events: none;
+  }
+  #crosshair::before, #crosshair::after {
+    content: ""; position: absolute; background: rgba(255,255,255,.9);
+    mix-blend-mode: difference;
+  }
+  #crosshair::before { left: 50%; top: 0; width: 2px; height: 100%; transform: translateX(-50%); }
+  #crosshair::after { top: 50%; left: 0; height: 2px; width: 100%; transform: translateY(-50%); }
+
+  #hotbar {
+    position: fixed; bottom: 14px; left: 50%; transform: translateX(-50%);
+    display: flex; gap: 4px; z-index: 10; pointer-events: none;
+    background: rgba(0,0,0,.45); padding: 5px; border-radius: 8px;
+    border: 2px solid rgba(255,255,255,.25);
+  }
+  .slot {
+    width: 52px; height: 52px;
+    background-color: rgba(0,0,0,.35);
+    background-size: 44px 44px;
+    background-position: center;
+    background-repeat: no-repeat;
+    image-rendering: pixelated;
+    border: 2px solid rgba(255,255,255,.18);
+    border-radius: 4px;
+    position: relative;
+  }
+  .slot.selected { border-color: #fff; box-shadow: 0 0 10px rgba(255,255,255,.8), inset 0 0 6px rgba(255,255,255,.4); }
+  .slot .num { position: absolute; left: 3px; top: 0; color: #fff; font-size: 11px; font-weight: bold; text-shadow: 0 1px 2px #000; }
+  .slot .name { position: absolute; bottom: -18px; left: 50%; transform: translateX(-50%); color: #fff; font-size: 11px; white-space: nowrap; text-shadow: 0 1px 3px #000; opacity: 0; transition: opacity .15s; }
+  .slot.selected .name { opacity: 1; }
+
+  #info {
+    position: fixed; top: 10px; left: 10px; z-index: 10; pointer-events: none;
+    color: #fff; font-size: 13px; text-shadow: 0 1px 3px #000;
+    background: rgba(0,0,0,.35); padding: 8px 12px; border-radius: 6px;
+    line-height: 1.6; min-width: 190px;
+  }
+</style>
+</head>
+<body>
+  <div id="blocker">
+    <div id="instructions">
+      <h1>⛏ 我的世界 · Web 版</h1>
+      <div class="sub">一个运行在浏览器里的体素沙盒小游戏</div>
+      <table>
+        <tr><td>W A S D</td><td>移动</td></tr>
+        <tr><td>鼠标</td><td>转动视角</td></tr>
+        <tr><td>左键 / 右键</td><td>破坏方块 / 放置方块</td></tr>
+        <tr><td>空格</td><td>跳跃 / 上升（飞行）</td></tr>
+        <tr><td>Shift</td><td>下降（飞行）</td></tr>
+        <tr><td>F</td><td>切换飞行模式</td></tr>
+        <tr><td>1 - 9 / 滚轮</td><td>选择方块</td></tr>
+        <tr><td>R</td><td>回到出生点</td></tr>
+      </table>
+      <div class="click">点击屏幕开始游戏</div>
+    </div>
+  </div>
+
+  <div id="crosshair"></div>
+  <div id="info"></div>
+  <div id="hotbar"></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+  (function () {
+    'use strict';
+
+    /* ============================ 基础常量 ============================ */
+    var WX = 64, WZ = 64, H = 48;          // 世界尺寸（宽 x 深 x 高）
+    var CHUNK = 16;                         // 区块大小
+    var SEA_LEVEL = 15;                     // 海平面
+    var GRAVITY = 26;                       // 重力加速度
+    var JUMP_SPEED = 9;                     // 跳跃初速度
+    var WALK_SPEED = 4.6;                   // 步行速度
+    var FLY_SPEED = 9.5;                    // 飞行速度
+    var PLAYER_HALF = 0.3;                  // 玩家半宽
+    var PLAYER_HEIGHT = 1.8;                // 玩家高度
+    var EYE_HEIGHT = 1.62;                  // 眼睛高度
+    var REACH = 6.5;                        // 交互距离
+
+    var AIR = 0, GRASS = 1, DIRT = 2, STONE = 3, SAND = 4,
+        WOOD = 5, LEAVES = 6, WATER = 7, PLANKS = 8, GLASS = 9, BRICK = 10;
+
+    var BLOCK_DEFS = [];
+    function def(id, name, opt) {
+      var d = { id: id, name: name, solid: true, cutout: false, tile: name, topTile: null, bottomTile: null, sideTile: null };
+      for (var k in opt) d[k] = opt[k];
+      BLOCK_DEFS[id] = d;
+    }
+    def(AIR,    'air',    { solid: false });
+    def(GRASS,  'grass',  { tile: 'grass_side', topTile: 'grass_top', bottomTile: 'dirt' });
+    def(DIRT,   'dirt',   { tile: 'dirt' });
+    def(STONE,  'stone',  { tile: 'stone' });
+    def(SAND,   'sand',   { tile: 'sand' });
+    def(WOOD,   'wood',   { tile: 'log_side', topTile: 'log_top', bottomTile: 'log_top' });
+    def(LEAVES, 'leaves', { tile: 'leaves', cutout: true });
+    def(WATER,  'water',  { solid: false, tile: 'water' });
+    def(PLANKS, 'planks', { tile: 'planks' });
+    def(GLASS,  'glass',  { tile: 'glass', cutout: true });
+    def(BRICK,  'brick',  { tile: 'brick' });
+
+    var HOTBAR = [
+      { id: GRASS,  icon: 'grass_side' },
+      { id: DIRT,   icon: 'dirt' },
+      { id: STONE,  icon: 'stone' },
+      { id: WOOD,   icon: 'log_side' },
+      { id: PLANKS, icon: 'planks' },
+      { id: LEAVES, icon: 'leaves' },
+      { id: SAND,   icon: 'sand' },
+      { id: GLASS,  icon: 'glass' },
+      { id: BRICK,  icon: 'brick' }
+    ];
+
+    function isOpaque(id) {
+      return id !== AIR && id !== WATER && !BLOCK_DEFS[id].cutout;
+    }
+    function isSolid(id) {
+      return id !== AIR && id !== WATER && BLOCK_DEFS[id].solid;
+    }
+    function shouldRenderFace(id, nb) {
+      if (id === WATER) return nb === AIR;
+      if (BLOCK_DEFS[id].cutout) return nb === AIR || nb === WATER;
+      return !isOpaque(nb);
+    }
+
+    /* ============================ 世界数据 ============================ */
+    var world = new Uint8Array(WX * H * WZ);
+    function idx(x, y, z) { return x + z * WX + y * WX * WZ; }
+    function getBlock(x, y, z) {
+      if (x < 0 || x >= WX || z < 0 || z >= WZ) return AIR;
+      if (y < 0) return STONE;
+      if (y >= H) return AIR;
+      return world[idx(x, y, z)];
+    }
+    function rawSetBlock(x, y, z, id) {
+      if (x < 0 || x >= WX || z < 0 || z >= WZ || y < 0 || y >= H) return;
+      world[idx(x, y, z)] = id;
+    }
+
+    /* ============================ 噪声地形 ============================ */
+    function hash2(x, z) {
+      var n = Math.imul(x, 374761393) + Math.imul(z, 668265263);
+      n = Math.imul(n ^ (n >>> 13), 1274126177);
+      return ((n ^ (n >>> 16)) >>> 0) / 4294967296;
+    }
+    function smooth(t) { return t * t * (3 - 2 * t); }
+    function valueNoise(x, z) {
+      var xi = Math.floor(x), zi = Math.floor(z);
+      var xf = x - xi, zf = z - zi;
+      var a = hash2(xi, zi), b = hash2(xi + 1, zi), c = hash2(xi, zi + 1), d = hash2(xi + 1, zi + 1);
+      var u = smooth(xf), v = smooth(zf);
+      return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
+    }
+    function fbm(x, z, octaves) {
+      var sum = 0, amp = 0.5, freq = 1, norm = 0;
+      for (var i = 0; i < octaves; i++) {
+        sum += valueNoise(x * freq, z * freq) * amp;
+        norm += amp;
+        amp *= 0.5; freq *= 2;
+      }
+      return sum / norm;
+    }
+    function terrainHeight(x, z) {
+      var n = fbm(x * 0.011, z * 0.011, 4);
+      var m = fbm(x * 0.045, z * 0.045, 3);
+      var h = Math.floor(16 + (n - 0.5) * 18 + (m - 0.5) * 8);
+      return Math.max(2, Math.min(H - 4, h));
+    }
+    function mulberry32(seed) {
+      var a = seed >>> 0;
+      return function () {
+        a |= 0; a = (a + 0x6D2B79F5) | 0;
+        var t = Math.imul(a ^ (a >>> 15), 1 | a);
+        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      };
+    }
+
+    /* ============================ 地形生成 ============================ */
+    function generateWorld() {
+      var rng = mulberry32(1337);
+      var heightMap = new Int16Array(WX * WZ);
+      var i, x, z, y;
+
+      // 基础地形
+      for (z = 0; z < WZ; z++) {
+        for (x = 0; x < WX; x++) {
+          var h = terrainHeight(x, z);
+          heightMap[x + z * WX] = h;
+          for (y = 0; y <= h; y++) {
+            var block;
+            if (y === 0) block = STONE;
+            else if (y === h) block = (h <= SEA_LEVEL + 1) ? SAND : GRASS;
+            else if (y > h - 3) block = (h <= SEA_LEVEL + 1) ? SAND : DIRT;
+            else block = STONE;
+            rawSetBlock(x, y, z, block);
+          }
+          // 填充海洋
+          if (h < SEA_LEVEL) {
+            for (y = h + 1; y <= SEA_LEVEL; y++) rawSetBlock(x, y, z, WATER);
+          }
+        }
+      }
+
+      // 树木
+      for (z = 2; z < WZ - 2; z++) {
+        for (x = 2; x < WX - 2; x++) {
+          var gy = heightMap[x + z * WX];
+          if (getBlock(x, gy, z) === GRASS && rng() < 0.012) {
+            placeTree(x, gy, z, rng);
+          }
+        }
+      }
+    }
+
+    function placeTree(x, groundY, z, rng) {
+      var trunkH = 4 + Math.floor(rng() * 3);
+      for (var i = 1; i <= trunkH; i++) rawSetBlock(x, groundY + i, z, WOOD);
+      var top = groundY + trunkH;
+      for (var dy = -2; dy <= 1; dy++) {
+        var ly = top + dy;
+        var r = (dy <= 0) ? 2 : 1;
+        for (var dx = -2; dx <= 2; dx++) {
+          for (var dz = -2; dz <= 2; dz++) {
+            if (Math.abs(dx) > r || Math.abs(dz) > r) continue;
+            // 树冠边缘随机镂空
+            if (Math.max(Math.abs(dx), Math.abs(dz)) === 2 && rng() < 0.35) continue;
+            if (getBlock(x + dx, ly, z + dz) === AIR) {
+              rawSetBlock(x + dx, ly, z + dz, LEAVES);
+            }
+          }
+        }
+      }
+      rawSetBlock(x, top + 1, z, LEAVES);
+    }
+
+    /* ============================ 像素纹理 ============================ */
+    var TEX_NAMES = ['grass_top', 'grass_side', 'dirt', 'stone', 'sand', 'log_side',
+                     'log_top', 'leaves', 'water', 'planks', 'glass', 'brick'];
+    var TEX_COLS = 4, TEX_ROWS = 3, TEX_SIZE = 16;
+    var tileCanvases = {};
+
+    function makeCanvas() {
+      var c = document.createElement('canvas');
+      c.width = TEX_SIZE; c.height = TEX_SIZE;
+      return c;
+    }
+    function fillNoise(ctx, base, spread, rng) {
+      for (var y = 0; y < TEX_SIZE; y++) {
+        for (var x = 0; x < TEX_SIZE; x++) {
+          var f = (rng() - 0.5) * spread;
+          ctx.fillStyle = shade(base, f);
+          ctx.fillRect(x, y, 1, 1);
+        }
+      }
+    }
+    function shade(hex, f) {
+      var n = parseInt(hex.slice(1), 16);
+      var r = Math.max(0, Math.min(255, Math.round(((n >> 16) & 255) + f)));
+      var g = Math.max(0, Math.min(255, Math.round(((n >> 8) & 255) + f)));
+      var b = Math.max(0, Math.min(255, Math.round((n & 255) + f)));
+      return 'rgb(' + r + ',' + g + ',' + b + ')';
+    }
+
+    function generateTextures() {
+      var rng = mulberry32(4242);
+      var i, x, y;
+
+      // 草顶
+      (function () {
+        var c = makeCanvas(), ctx = c.getContext('2d');
+        fillNoise(ctx, '#5aa838', 26, rng);
+        tileCanvases['grass_top'] = c;
+      })();
+      // 草侧
+      (function () {
+        var c = makeCanvas(), ctx = c.getContext('2d');
+        fillNoise(ctx, '#79553a', 22, rng);
+        for (y = 0; y < 5; y++) {
+          for (x = 0; x < TEX_SIZE; x++) {
+            if (y >= 3 && rng() < 0.35) continue;
+            ctx.fillStyle = shade('#5aa838', (rng() - 0.5) * 24);
+            ctx.fillRect(x, y, 1, 1);
+          }
+        }
+        tileCanvases['grass_side'] = c;
+      })();
+      // 泥土
+      (function () {
+        var c = makeCanvas(), ctx = c.getContext('2d');
+        fillNoise(ctx, '#79553a', 24, rng);
+        tileCanvases['dirt'] = c;
+      })();
+      // 石头
+      (function () {
+        var c = makeCanvas(), ctx = c.getContext('2d');
+        fillNoise(ctx, '#8a8a8a', 30, rng);
+        for (i = 0; i < 10; i++) {
+          ctx.fillStyle = shade('#8a8a8a', (rng() - 0.5) * 90);
+          ctx.fillRect(Math.floor(rng() * 14), Math.floor(rng() * 14), 2, 2);
+        }
+        tileCanvases['stone'] = c;
+      })();
+      // 沙子
+      (function () {
+        var c = makeCanvas(), ctx = c.getContext('2d');
+        fillNoise(ctx, '#dcd0a0', 18, rng);
+        tileCanvases['sand'] = c;
+      })();
+      // 原木侧
+      (function () {
+        var c = makeCanvas(), ctx = c.getContext('2d');
+        for (x = 0; x < TEX_SIZE; x++) {
+          ctx.fillStyle = shade('#6b4f2a', (Math.floor(x / 3) % 2 ? 8 : -14) + (rng() - 0.5) * 14);
+          ctx.fillRect(x, 0, 1, TEX_SIZE);
+        }
+        for (y = 0; y < TEX_SIZE; y++) {
+          if (rng() < 0.08) { ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.fillRect(Math.floor(rng() * 16), y, 1, 1); }
+        }
+        tileCanvases['log_side'] = c;
+      })();
+      // 原木顶
+      (function () {
+        var c = makeCanvas(), ctx = c.getContext('2d');
+        ctx.fillStyle = '#6b4f2a'; ctx.fillRect(0, 0, 16, 16);
+        ctx.fillStyle = '#8a6a3a'; ctx.fillRect(2, 2, 12, 12);
+        ctx.fillStyle = '#6b4f2a'; ctx.fillRect(4, 4, 8, 8);
+        ctx.fillStyle = '#8a6a3a'; ctx.fillRect(6, 6, 4, 4);
+        tileCanvases['log_top'] = c;
+      })();
+      // 树叶
+      (function () {
+        var c = makeCanvas(), ctx = c.getContext('2d');
+        fillNoise(ctx, '#3e8c28', 26, rng);
+        for (i = 0; i < 22; i++) {
+          var px = Math.floor(rng() * 16), py = Math.floor(rng() * 16);
+          ctx.clearRect(px, py, 1, 1);
+        }
+        for (i = 0; i < 18; i++) {
+          ctx.fillStyle = shade('#3e8c28', (rng() - 0.5) * 70);
+          ctx.fillRect(Math.floor(rng() * 16), Math.floor(rng() * 16), 1, 1);
+        }
+        tileCanvases['leaves'] = c;
+      })();
+      // 水
+      (function () {
+        var c = makeCanvas(), ctx = c.getContext('2d');
+        for (y = 0; y < TEX_SIZE; y++) {
+          for (x = 0; x < TEX_SIZE; x++) {
+            var f = (rng() - 0.5) * 22;
+            ctx.fillStyle = 'rgba(' + Math.round(46 + f) + ',' + Math.round(105 + f) + ',' + Math.round(210 + f) + ',0.65)';
+            ctx.fillRect(x, y, 1, 1);
+          }
+        }
+        tileCanvases['water'] = c;
+      })();
+      // 木板
+      (function () {
+        var c = makeCanvas(), ctx = c.getContext('2d');
+        fillNoise(ctx, '#a08050', 20, rng);
+        for (y = 0; y < TEX_SIZE; y += 4) {
+          ctx.fillStyle = 'rgba(60,40,20,.5)';
+          ctx.fillRect(0, y, TEX_SIZE, 1);
+          if (y + 3 < TEX_SIZE) ctx.fillRect((y / 2) % 16, y + 1, 1, 2);
+        }
+        tileCanvases['planks'] = c;
+      })();
+      // 玻璃
+      (function () {
+        var c = makeCanvas(), ctx = c.getContext('2d');
+        ctx.clearRect(0, 0, 16, 16);
+        ctx.fillStyle = 'rgba(200,225,235,0.95)';
+        ctx.fillRect(0, 0, 16, 1); ctx.fillRect(0, 15, 16, 1);
+        ctx.fillRect(0, 0, 1, 16); ctx.fillRect(15, 0, 1, 16);
+        ctx.fillStyle = 'rgba(255,255,255,0.8)';
+        ctx.fillRect(2, 3, 1, 6); ctx.fillRect(8, 7, 1, 5);
+        tileCanvases['glass'] = c;
+      })();
+      // 砖块
+      (function () {
+        var c = makeCanvas(), ctx = c.getContext('2d');
+        fillNoise(ctx, '#9c4a3c', 22, rng);
+        ctx.fillStyle = '#d8c8b8';
+        for (y = 0; y < TEX_SIZE; y += 4) ctx.fillRect(0, y, 16, 1);
+        for (y = 0; y < TEX_SIZE; y += 4) {
+          var off = (y % 8 === 0) ? 0 : 4;
+          for (x = off; x < 16; x += 8) ctx.fillRect(x, y, 1, 4);
+        }
+        tileCanvases['brick'] = c;
+      })();
+    }
+
+    function buildAtlasTexture() {
+      generateTextures();
+      var atlas = document.createElement('canvas');
+      atlas.width = TEX_SIZE * TEX_COLS;
+      atlas.height = TEX_SIZE * TEX_ROWS;
+      var ctx = atlas.getContext('2d');
+      for (var i = 0; i < TEX_NAMES.length; i++) {
+        var name = TEX_NAMES[i];
+        var col = i % TEX_COLS, row = Math.floor(i / TEX_COLS);
+        ctx.drawImage(tileCanvases[name], col * TEX_SIZE, row * TEX_SIZE);
+      }
+      var tex = new THREE.CanvasTexture(atlas);
+      tex.magFilter = THREE.NearestFilter;
+      tex.minFilter = THREE.NearestFilter;
+      tex.generateMipmaps = false;
+      return tex;
+    }
+    function tileUV(name) {
+      var i = TEX_NAMES.indexOf(name);
+      var col = i % TEX_COLS, row = Math.floor(i / TEX_COLS);
+      var u0 = col / TEX_COLS, u1 = (col + 1) / TEX_COLS;
+      var v0 = 1 - (row + 1) / TEX_ROWS, v1 = 1 - row / TEX_ROWS;
+      return [u0, v0, u1, v1];
+    }
+
+    /* ============================ 场景与渲染 ============================ */
+    var scene = new THREE.Scene();
+    var skyColor = new THREE.Color(0x87ceeb);
+    scene.background = skyColor;
+    scene.fog = new THREE.Fog(0x87ceeb, 55, 130);
+
+    var camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 400);
+    camera.rotation.order = 'YXZ';
+
+    var renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    document.body.appendChild(renderer.domElement);
+
+    var hemiLight = new THREE.HemisphereLight(0xbfd9ff, 0x8a7f6a, 0.85);
+    scene.add(hemiLight);
+    var sunLight = new THREE.DirectionalLight(0xffffff, 0.9);
+    sunLight.position.set(90, 130, 60);
+    scene.add(sunLight);
+
+    var atlasTexture = buildAtlasTexture();
+    var opaqueMat = new THREE.MeshLambertMaterial({ map: atlasTexture, vertexColors: true });
+    var cutoutMat = new THREE.MeshLambertMaterial({ map: atlasTexture, vertexColors: true, transparent: true, alphaTest: 0.5 });
+    var waterMat  = new THREE.MeshLambertMaterial({ map: atlasTexture, vertexColors: true, transparent: true, opacity: 0.7, depthWrite: false });
+
+    /* ============================ 区块网格 ============================ */
+    var chunkMeshes = {};
+    var dirtyChunks = {};
+
+    var FACES = [
+      { name: 'nx', dir: [-1, 0, 0], corners: [[0,1,0],[0,0,0],[0,1,1],[0,0,1]], shade: 0.72 },
+      { name: 'px', dir: [ 1, 0, 0], corners: [[1,1,1],[1,0,1],[1,1,0],[1,0,0]], shade: 0.72 },
+      { name: 'ny', dir: [ 0,-1, 0], corners: [[1,0,1],[0,0,1],[1,0,0],[0,0,0]], shade: 0.45 },
+      { name: 'py', dir: [ 0, 1, 0], corners: [[1,1,0],[0,1,0],[1,1,1],[0,1,1]], shade: 1.00 },
+      { name: 'nz', dir: [ 0, 0,-1], corners: [[0,1,0],[0,0,0],[1,1,0],[1,0,0]], shade: 0.62 },
+      { name: 'pz', dir: [ 0, 0, 1], corners: [[1,1,1],[1,0,1],[0,1,1],[0,0,1]], shade: 0.62 }
+    ];
+
+    function faceTile(def, face) {
+      if (face.name === 'py' && def.topTile) return def.topTile;
+      if (face.name === 'ny' && def.bottomTile) return def.bottomTile;
+      if (face.name !== 'py' && face.name !== 'ny' && def.sideTile) return def.sideTile;
+      return def.tile;
+    }
+
+    function addFace(acc, x, y, z, face, tileName, blockId) {
+      var dir = face.dir, corners = face.corners;
+      var ps = [];
+      for (var i = 0; i < 4; i++) {
+        var px = x + corners[i][0];
+        var py = y + corners[i][1];
+        var pz = z + corners[i][2];
+        if (blockId === WATER && dir[1] === 1) py = y + 0.9;
+        ps.push([px, py, pz]);
+      }
+      // 根据几何法线判断三角形绕序
+      var e1 = [ps[1][0]-ps[0][0], ps[1][1]-ps[0][1], ps[1][2]-ps[0][2]];
+      var e2 = [ps[2][0]-ps[0][0], ps[2][1]-ps[0][1], ps[2][2]-ps[0][2]];
+      var nx = e1[1]*e2[2]-e1[2]*e2[1];
+      var ny = e1[2]*e2[0]-e1[0]*e2[2];
+      var nz = e1[0]*e2[1]-e1[1]*e2[0];
+      var dot = nx*dir[0]+ny*dir[1]+nz*dir[2];
+      var tri = dot >= 0 ? [0,1,2, 1,3,2] : [0,2,1, 1,2,3];
+
+      var base = acc.positions.length / 3;
+      var uv = tileUV(tileName);
+      var uvCorners = [[uv[0],uv[3]],[uv[0],uv[1]],[uv[2],uv[3]],[uv[2],uv[1]]];
+      for (var v = 0; v < 4; v++) {
+        acc.positions.push(ps[v][0], ps[v][1], ps[v][2]);
+        acc.normals.push(dir[0], dir[1], dir[2]);
+        acc.colors.push(face.shade, face.shade, face.shade);
+        acc.uvs.push(uvCorners[v][0], uvCorners[v][1]);
+      }
+      for (var t = 0; t < 6; t++) acc.indices.push(base + tri[t]);
+    }
+
+    function newAcc() {
+      return { positions: [], normals: [], colors: [], uvs: [], indices: [] };
+    }
+    function accToMesh(acc, material) {
+      if (!acc.indices.length) return null;
+      var geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(acc.positions), 3));
+      geo.setAttribute('normal', new THREE.BufferAttribute(new Float32Array(acc.normals), 3));
+      geo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(acc.colors), 3));
+      geo.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(acc.uvs), 2));
+      geo.setIndex(new THREE.BufferAttribute(new Uint32Array(acc.indices), 1));
+      return new THREE.Mesh(geo, material);
+    }
+
+    function buildChunk(cx, cz) {
+      var key = cx + ',' + cz;
+      var old = chunkMeshes[key];
+      if (old) {
+        scene.remove(old.group);
+        old.group.traverse(function (m) {
+          if (m.geometry) m.geometry.dispose();
+        });
+        delete chunkMeshes[key];
+      }
+
+      var x0 = cx * CHUNK, z0 = cz * CHUNK;
+      var opaque = newAcc(), cutout = newAcc(), water = newAcc();
+
+      for (var y = 0; y < H; y++) {
+        for (var z = z0; z < z0 + CHUNK && z < WZ; z++) {
+          for (var x = x0; x < x0 + CHUNK && x < WX; x++) {
+            var id = getBlock(x, y, z);
+            if (id === AIR) continue;
+            var d = BLOCK_DEFS[id];
+            for (var f = 0; f < 6; f++) {
+              var face = FACES[f];
+              var nb = getBlock(x + face.dir[0], y + face.dir[1], z + face.dir[2]);
+              if (!shouldRenderFace(id, nb)) continue;
+              var acc = (id === WATER) ? water : (d.cutout ? cutout : opaque);
+              addFace(acc, x, y, z, face, faceTile(d, face), id);
+            }
+          }
+        }
+      }
+
+      var group = new THREE.Group();
+      var om = accToMesh(opaque, opaqueMat);
+      var cm = accToMesh(cutout, cutoutMat);
+      var wm = accToMesh(water, waterMat);
+      if (om) group.add(om);
+      if (cm) group.add(cm);
+      if (wm) { wm.renderOrder = 1; group.add(wm); }
+      scene.add(group);
+      chunkMeshes[key] = { group: group };
+    }
+
+    function chunkOf(v) { return Math.floor(v / CHUNK); }
+    function markChunkDirty(cx, cz) {
+      if (cx < 0 || cz < 0 || cx * CHUNK >= WX || cz * CHUNK >= WZ) return;
+      dirtyChunks[cx + ',' + cz] = true;
+    }
+    function flushDirtyChunks() {
+      for (var key in dirtyChunks) {
+        var p = key.split(',');
+        buildChunk(parseInt(p[0]), parseInt(p[1]));
+      }
+      dirtyChunks = {};
+    }
+    function editBlock(x, y, z, id) {
+      rawSetBlock(x, y, z, id);
+      var cx = chunkOf(x), cz = chunkOf(z);
+      markChunkDirty(cx, cz);
+      if (x % CHUNK === 0) markChunkDirty(cx - 1, cz);
+      if (x % CHUNK === CHUNK - 1) markChunkDirty(cx + 1, cz);
+      if (z % CHUNK === 0) markChunkDirty(cx, cz - 1);
+      if (z % CHUNK === CHUNK - 1) markChunkDirty(cx, cz + 1);
+      flushDirtyChunks();
+    }
+
+    function buildAllChunks() {
+      for (var cz = 0; cz < WZ / CHUNK; cz++) {
+        for (var cx = 0; cx < WX / CHUNK; cx++) buildChunk(cx, cz);
+      }
+    }
+
+    /* ============================ 云朵 ============================ */
+    var clouds = [];
+    function buildClouds() {
+      var rng = mulberry32(777);
+      var mat = new THREE.MeshLambertMaterial({ color: 0xffffff, transparent: true, opacity: 0.92 });
+      for (var i = 0; i < 26; i++) {
+        var w = 5 + rng() * 9, d = 4 + rng() * 7;
+        var mesh = new THREE.Mesh(new THREE.BoxGeometry(w, 1.2, d), mat);
+        mesh.position.set(rng() * (WX + 40) - 20, 36 + rng() * 12, rng() * (WZ + 40) - 20);
+        scene.add(mesh);
+        clouds.push(mesh);
+      }
+    }
+
+    /* ============================ 玩家 ============================ */
+    var player = {
+      x: WX / 2, y: 20, z: WZ / 2,
+      vx: 0, vy: 0, vz: 0,
+      yaw: 0, pitch: 0,
+      onGround: false, fly: false
+    };
+
+    function findGroundY(x, z) {
+      for (var y = H - 1; y >= 1; y--) {
+        if (isSolid(getBlock(x, y, z))) return y + 1;
+      }
+      return SEA_LEVEL + 2;
+    }
+    function respawn() {
+      player.x = WX / 2; player.z = WZ / 2;
+      player.y = findGroundY(Math.floor(player.x), Math.floor(player.z));
+      player.vx = player.vy = player.vz = 0;
+      player.yaw = 0; player.pitch = 0;
+    }
+
+    function collides(px, py, pz) {
+      var x0 = Math.floor(px - PLAYER_HALF), x1 = Math.floor(px + PLAYER_HALF);
+      var y0 = Math.floor(py), y1 = Math.floor(py + PLAYER_HEIGHT);
+      var z0 = Math.floor(pz - PLAYER_HALF), z1 = Math.floor(pz + PLAYER_HALF);
+      for (var y = y0; y <= y1; y++) {
+        for (var z = z0; z <= z1; z++) {
+          for (var x = x0; x <= x1; x++) {
+            if (isSolid(getBlock(x, y, z))) return true;
+          }
+        }
+      }
+      return false;
+    }
+
+    function approach(v, target, delta) {
+      if (v < target) return Math.min(v + delta, target);
+      return Math.max(v - delta, target);
+    }
+
+    var keys = {};
+    function updatePlayer(dt) {
+      var f = (keys['KeyW'] ? 1 : 0) - (keys['KeyS'] ? 1 : 0);
+      var r = (keys['KeyD'] ? 1 : 0) - (keys['KeyA'] ? 1 : 0);
+      var sin = Math.sin(player.yaw), cos = Math.cos(player.yaw);
+      var wx = -sin * f + cos * r;
+      var wz = -cos * f + -sin * r;
+      var len = Math.hypot(wx, wz);
+      if (len > 0) { wx /= len; wz /= len; }
+
+      var accel = player.fly ? 22 : (player.onGround ? 13 : 4.5);
+      var speed = player.fly ? FLY_SPEED : WALK_SPEED;
+      player.vx = approach(player.vx, wx * speed, accel * dt);
+      player.vz = approach(player.vz, wz * speed, accel * dt);
+
+      if (player.fly) {
+        var vyTarget = ((keys['Space'] ? 1 : 0) - (keys['ShiftLeft'] ? 1 : 0) - (keys['ShiftRight'] ? 1 : 0)) * FLY_SPEED;
+        player.vy = approach(player.vy, vyTarget, 30 * dt);
+      } else {
+        player.vy -= GRAVITY * dt;
+        if (player.vy < -40) player.vy = -40;
+        if (keys['Space'] && player.onGround) {
+          player.vy = JUMP_SPEED;
+          player.onGround = false;
+        }
+      }
+
+      player.onGround = false;
+
+      // X 轴
+      var nx = player.x + player.vx * dt;
+      nx = Math.max(PLAYER_HALF, Math.min(WX - PLAYER_HALF, nx));
+      if (!collides(nx, player.y, player.z)) player.x = nx; else player.vx = 0;
+
+      // Z 轴
+      var nz = player.z + player.vz * dt;
+      nz = Math.max(PLAYER_HALF, Math.min(WZ - PLAYER_HALF, nz));
+      if (!collides(player.x, player.y, nz)) player.z = nz; else player.vz = 0;
+
+      // Y 轴（细分步进，避免高速穿透）
+      var moveY = player.vy * dt;
+      var steps = Math.max(1, Math.ceil(Math.abs(moveY) / 0.45));
+      for (var i = 0; i < steps; i++) {
+        var ny = player.y + moveY / steps;
+        if (collides(player.x, ny, player.z)) {
+          if (player.vy < 0) player.onGround = true;
+          player.vy = 0;
+          break;
+        }
+        player.y = ny;
+      }
+      if (player.y < -20) respawn();
+    }
+
+    /* ============================ 体素射线 ============================ */
+    function raycast(origin, dir, maxDist) {
+      var x = Math.floor(origin.x), y = Math.floor(origin.y), z = Math.floor(origin.z);
+      var stepX = dir.x > 0 ? 1 : (dir.x < 0 ? -1 : 0);
+      var stepY = dir.y > 0 ? 1 : (dir.y < 0 ? -1 : 0);
+      var stepZ = dir.z > 0 ? 1 : (dir.z < 0 ? -1 : 0);
+      var tDeltaX = stepX !== 0 ? Math.abs(1 / dir.x) : Infinity;
+      var tDeltaY = stepY !== 0 ? Math.abs(1 / dir.y) : Infinity;
+      var tDeltaZ = stepZ !== 0 ? Math.abs(1 / dir.z) : Infinity;
+      var tMaxX = stepX !== 0 ? (stepX > 0 ? (x + 1 - origin.x) / dir.x : (x - origin.x) / dir.x) : Infinity;
+      var tMaxY = stepY !== 0 ? (stepY > 0 ? (y + 1 - origin.y) / dir.y : (y - origin.y) / dir.y) : Infinity;
+      var tMaxZ = stepZ !== 0 ? (stepZ > 0 ? (z + 1 - origin.z) / dir.z : (z - origin.z) / dir.z) : Infinity;
+      var t = 0, normal = [0, 0, 0];
+
+      for (var i = 0; i < 256; i++) {
+        if (x < 0 || x >= WX || z < 0 || z >= WZ || y < 0 || y >= H) return null;
+        var id = getBlock(x, y, z);
+        if (id !== AIR) return { x: x, y: y, z: z, id: id, normal: normal };
+        if (t > maxDist) return null;
+
+        if (tMaxX <= tMaxY && tMaxX <= tMaxZ) {
+          x += stepX; t = tMaxX; tMaxX += tDeltaX; normal = [-stepX, 0, 0];
+        } else if (tMaxY <= tMaxX && tMaxY <= tMaxZ) {
+          y += stepY; t = tMaxY; tMaxY += tDeltaY; normal = [0, -stepY, 0];
+        } else {
+          z += stepZ; t = tMaxZ; tMaxZ += tDeltaZ; normal = [0, 0, -stepZ];
+        }
+      }
+      return null;
+    }
+
+    /* ============================ 方块交互 ============================ */
+    var highlight = new THREE.LineSegments(
+      new THREE.EdgesGeometry(new THREE.BoxGeometry(1.004, 1.004, 1.004)),
+      new THREE.LineBasicMaterial({ color: 0x111111, transparent: true, opacity: 0.7 })
+    );
+    highlight.visible = false;
+    scene.add(highlight);
+
+    var rayDir = new THREE.Vector3();
+
+    function tryBreak() {
+      camera.getWorldDirection(rayDir);
+      var hit = raycast(camera.position, rayDir, REACH);
+      if (!hit) return;
+      if (hit.y <= 0) return;
+      editBlock(hit.x, hit.y, hit.z, AIR);
+    }
+
+    function boxIntersectsPlayer(bx, by, bz) {
+      return (bx + 1 > player.x - PLAYER_HALF) && (bx < player.x + PLAYER_HALF) &&
+             (by + 1 > player.y) && (by < player.y + PLAYER_HEIGHT) &&
+             (bz + 1 > player.z - PLAYER_HALF) && (bz < player.z + PLAYER_HALF);
+    }
+
+    function tryPlace() {
+      camera.getWorldDirection(rayDir);
+      var hit = raycast(camera.position, rayDir, REACH);
+      if (!hit) return;
+      var bx = hit.x + hit.normal[0];
+      var by = hit.y + hit.normal[1];
+      var bz = hit.z + hit.normal[2];
+      if (bx < 0 || bx >= WX || bz < 0 || bz >= WZ || by < 0 || by >= H) return;
+      var cur = getBlock(bx, by, bz);
+      if (cur !== AIR && cur !== WATER) return;
+      if (boxIntersectsPlayer(bx, by, bz)) return;
+      editBlock(bx, by, bz, HOTBAR[selected].id);
+    }
+
+    /* ============================ UI ============================ */
+    var selected = 0;
+    var hotbarEl = document.getElementById('hotbar');
+    var blocker = document.getElementById('blocker');
+    var infoEl = document.getElementById('info');
+    var crosshair = document.getElementById('crosshair');
+
+    function buildHotbar() {
+      hotbarEl.innerHTML = '';
+      for (var i = 0; i < HOTBAR.length; i++) {
+        var item = HOTBAR[i];
+        var slot = document.createElement('div');
+        slot.className = 'slot' + (i === selected ? ' selected' : '');
+        var iconCanvas = tileCanvases[item.icon];
+        if (iconCanvas) slot.style.backgroundImage = 'url(' + iconCanvas.toDataURL() + ')';
+        slot.innerHTML = '<span class="num">' + (i + 1) + '</span><span class="name">' + BLOCK_DEFS[item.id].name + '</span>';
+        hotbarEl.appendChild(slot);
+      }
+    }
+    function updateHotbar() {
+      var slots = hotbarEl.children;
+      for (var i = 0; i < slots.length; i++) {
+        slots[i].className = 'slot' + (i === selected ? ' selected' : '');
+      }
+    }
+
+    /* ============================ 输入 ============================ */
+    document.addEventListener('keydown', function (e) {
+      if (e.code === 'Space') e.preventDefault();
+      keys[e.code] = true;
+      if (e.code.indexOf('Digit') === 0) {
+        var n = parseInt(e.code.slice(5)) - 1;
+        if (n >= 0 && n < HOTBAR.length) { selected = n; updateHotbar(); }
+      }
+      if (e.code === 'KeyF') { player.fly = !player.fly; player.vy = 0; }
+      if (e.code === 'KeyR') respawn();
+    });
+    document.addEventListener('keyup', function (e) {
+      keys[e.code] = false;
+    });
+
+    document.addEventListener('mousemove', function (e) {
+      if (document.pointerLockElement !== renderer.domElement) return;
+      player.yaw -= e.movementX * 0.0022;
+      player.pitch -= e.movementY * 0.0022;
+      var limit = Math.PI / 2 - 0.01;
+      player.pitch = Math.max(-limit, Math.min(limit, player.pitch));
+    });
+
+    document.addEventListener('mousedown', function (e) {
+      if (document.pointerLockElement !== renderer.domElement) return;
+      if (e.button === 0) tryBreak();
+      else if (e.button === 2) tryPlace();
+    });
+
+    document.addEventListener('wheel', function (e) {
+      if (document.pointerLockElement !== renderer.domElement) return;
+      selected = (selected + (e.deltaY > 0 ? 1 : -1) + HOTBAR.length) % HOTBAR.length;
+      updateHotbar();
+    });
+
+    document.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+
+    blocker.addEventListener('click', function () {
+      if (renderer.domElement.requestPointerLock) {
+        renderer.domElement.requestPointerLock();
+      }
+    });
+    document.addEventListener('pointerlockchange', function () {
+      var locked = document.pointerLockElement === renderer.domElement;
+      blocker.style.display = locked ? 'none' : 'flex';
+    });
+
+    window.addEventListener('resize', function () {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    /* ============================ 主循环 ============================ */
+    var clock = new THREE.Clock();
+    var fpsAcc = 0, fpsFrames = 0, fps = 0, fpsTimer = 0;
+
+    function animate() {
+      requestAnimationFrame(animate);
+      var dt = Math.min(clock.getDelta(), 0.05);
+
+      updatePlayer(dt);
+
+      // 相机
+      camera.position.set(player.x, player.y + EYE_HEIGHT, player.z);
+      camera.rotation.set(player.pitch, player.yaw, 0);
+
+      // 准星高亮
+      if (document.pointerLockElement === renderer.domElement) {
+        camera.getWorldDirection(rayDir);
+        var hit = raycast(camera.position, rayDir, REACH);
+        if (hit) {
+          highlight.position.set(hit.x + 0.5, hit.y + 0.5, hit.z + 0.5);
+          highlight.visible = true;
+        } else {
+          highlight.visible = false;
+        }
+      } else {
+        highlight.visible = false;
+      }
+
+      // 云朵
+      for (var i = 0; i < clouds.length; i++) {
+        clouds[i].position.x += dt * 1.6;
+        if (clouds[i].position.x > WX + 30) clouds[i].position.x = -30;
+      }
+
+      renderer.render(scene, camera);
+
+      // FPS / 信息
+      fpsAcc += dt; fpsFrames++; fpsTimer += dt;
+      if (fpsTimer >= 0.5) {
+        fps = Math.round(fpsFrames / fpsAcc);
+        fpsAcc = 0; fpsFrames = 0; fpsTimer = 0;
+      }
+      infoEl.textContent =
+        'FPS: ' + fps +
+        ' | 位置: ' + Math.round(player.x) + ', ' + Math.round(player.y) + ', ' + Math.round(player.z) +
+        ' | ' + (player.fly ? '飞行模式' : '步行模式') +
+        ' | 手持: ' + BLOCK_DEFS[HOTBAR[selected].id].name;
+    }
+
+    /* ============================ 启动 ============================ */
+    generateWorld();
+    buildAllChunks();
+    buildClouds();
+    respawn();
+    buildHotbar();
+    animate();
+  })();
+  </script>
+</body>
+</html>
