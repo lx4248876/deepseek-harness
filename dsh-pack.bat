@@ -12,7 +12,7 @@ rem    dsh-pack.bat                打包到桌面 dsh-backup 目录
 rem    dsh-pack.bat D:\my-backup    打包到指定目录
 rem
 rem  自动排除（不会进包）:
-rem    node_modules / lib / dist / .git / coverage / .web-verify
+rem    node_modules / lib / dist / coverage / .web-verify（.git 会一起打包，确保拷过去能直接 build）
 rem    dsh-minimal-turbo.git.bak / *.log / tmp-*.mjs
 rem    以及敏感文件 .env 与 auth.local.env（需要密钥请手动另拷）
 rem ============================================================
@@ -35,7 +35,7 @@ mkdir "%STAGE%\project" 2>nul
 mkdir "%STAGE%\config" 2>nul
 
 echo [1/3] 复制项目文件（排除 node_modules/lib/dist/.git/.env 等）...
-robocopy "%PROJECT_ROOT%" "%STAGE%\project" /E /XD node_modules lib dist .git coverage .web-verify dsh-minimal-turbo.git.bak /XF *.log .env auth.local.env tmp-*.mjs tmp-wire-output.txt >nul
+robocopy "%PROJECT_ROOT%" "%STAGE%\project" /E /XD node_modules lib dist coverage .web-verify dsh-minimal-turbo.git.bak /XF *.log .env auth.local.env tmp-*.mjs tmp-wire-output.txt >nul
 if %ERRORLEVEL% GEQ 8 (
   echo [错误] 项目文件复制失败。
   goto :fail
@@ -53,17 +53,18 @@ if exist "%DSH_HOME_DIR%" (
 )
 
 echo [3/3] 生成 zip 包...
-powershell -NoProfile -Command "Compress-Archive -Path '%STAGE%\project\*' -DestinationPath '%OUT_DIR%\dsh-project-%PROJECT_NAME%-%TS%.zip' -CompressionLevel Optimal -Force"
+powershell -NoProfile -Command "$items = Get-ChildItem -LiteralPath '%STAGE%\project' -Force; Compress-Archive -Path $items.FullName -DestinationPath '%OUT_DIR%\dsh-project-%PROJECT_NAME%-%TS%.zip' -CompressionLevel Optimal -Force"
 if errorlevel 1 goto :fail
 if exist "%STAGE%\config\*" (
-  powershell -NoProfile -Command "Compress-Archive -Path '%STAGE%\config\*' -DestinationPath '%OUT_DIR%\dsh-user-config-%TS%.zip' -CompressionLevel Optimal -Force"
+  powershell -NoProfile -Command "$items = Get-ChildItem -LiteralPath '%STAGE%\config' -Force; Compress-Archive -Path $items.FullName -DestinationPath '%OUT_DIR%\dsh-user-config-%TS%.zip' -CompressionLevel Optimal -Force"
   if errorlevel 1 goto :fail
 )
 
 > "%OUT_DIR%\恢复说明-%TS%.txt" echo dsh 备份文件（%TS%）
 >> "%OUT_DIR%\恢复说明-%TS%.txt" echo ============================================
->> "%OUT_DIR%\恢复说明-%TS%.txt" echo 1. dsh-project-*.zip     项目源码（已排除 node_modules/lib/.git/.env）
->> "%OUT_DIR%\恢复说明-%TS%.txt" echo    恢复: 解压到目标目录后在根目录执行 pnpm install
+>> "%OUT_DIR%\恢复说明-%TS%.txt" echo 1. dsh-project-*.zip     项目源码 + .git（已排除 node_modules/lib/.env）
+>> "%OUT_DIR%\恢复说明-%TS%.txt" echo    恢复: 解压到目标目录后先执行 pnpm install
+>> "%OUT_DIR%\恢复说明-%TS%.txt" echo    然后执行 pnpm run build（项目包自带 .git，无需重新 git init）
 >> "%OUT_DIR%\恢复说明-%TS%.txt" echo 2. dsh-user-config-*.zip 用户目录配置（%DSH_HOME_DIR%）
 >> "%OUT_DIR%\恢复说明-%TS%.txt" echo    恢复: 解压到 %USERPROFILE% 下还原 .dsh（或对应 DSH_HOME）
 >> "%OUT_DIR%\恢复说明-%TS%.txt" echo 3. 注意: .env / auth.local.env / credentials* / 会话记录 / 安装缓存默认不打包，
