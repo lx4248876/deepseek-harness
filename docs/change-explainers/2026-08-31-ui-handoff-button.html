@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>新增 handoff 按钮：换会话续接任务</title>
+<style>
+  :root {
+    --bg: #f7f8fa; --card: #ffffff; --ink: #22272e; --muted: #5c6670;
+    --line: #d9dee3; --accent: #2563eb; --ok: #15803d; --warn: #b45309; --bad: #b91c1c;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.7 "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; }
+  main { max-width: 880px; margin: 0 auto; padding: 32px 18px 64px; }
+  h1 { font-size: 26px; margin: 0 0 6px; }
+  h2 { font-size: 20px; margin: 36px 0 10px; }
+  p { margin: 8px 0; }
+  .lede { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; }
+  .lede b { color: var(--accent); }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px 20px; margin-top: 14px; }
+  .steps { display: flex; flex-wrap: wrap; gap: 10px; margin: 12px 0 4px; }
+  .step { flex: 1 1 150px; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; background: #fff; cursor: pointer; }
+  .step:hover { border-color: var(--accent); }
+  .step .num { display: inline-block; width: 20px; height: 20px; line-height: 20px; text-align: center; border-radius: 50%; background: var(--accent); color: #fff; font-size: 12px; margin-right: 6px; }
+  .step .detail { display: none; margin-top: 8px; color: var(--muted); font-size: 14px; }
+  .step.open .detail { display: block; }
+  .file { font-family: Consolas, monospace; font-size: 13px; color: var(--muted); }
+  code { font-family: Consolas, monospace; font-size: 0.9em; background: #eef1f4; border-radius: 4px; padding: 1px 5px; }
+  pre { background: #0f172a; color: #e2e8f0; border-radius: 10px; padding: 14px; overflow-x: auto; font-size: 13px; line-height: 1.5; }
+  details { margin-top: 10px; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
+  summary { cursor: pointer; padding: 10px 14px; font-weight: 600; }
+  details .body { padding: 0 14px 12px; }
+  button.copy { border: 1px solid var(--line); background: #fff; border-radius: 8px; padding: 4px 10px; cursor: pointer; font-size: 13px; }
+  button.copy:hover { border-color: var(--accent); color: var(--accent); }
+  .ok { color: var(--ok); } .warn { color: var(--warn); } .bad { color: var(--bad); }
+  .tag { display: inline-block; font-size: 12px; border-radius: 999px; padding: 1px 10px; margin-right: 6px; }
+  .tag.green { background: #dcfce7; color: var(--ok); }
+  .tag.amber { background: #fef3c7; color: var(--warn); }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 640px) { .grid2 { grid-template-columns: 1fr; } main { padding: 20px 12px 48px; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>🔄 新增 handoff 按钮：把任务完整搬到新对话</h1>
+  <p class="file">docs/change-explainers/2026-08-31-ui-handoff-button.html · 对应代码包 <code>packages/client/ui-handoff</code></p>
+
+  <div class="lede">
+    <p>📌 <b>一句话结论：</b>以前换对话要手动复制粘贴才能续接任务；现在输入框右侧多了一个 <b>“交接”(Handoff)</b> 按钮，点一下，AI 会自动生成任务交接包、开一个新对话把交接包放进去，然后把旧对话归档，全程不用复制粘贴。</p>
+  </div>
+
+  <h2>🧩 生活类比</h2>
+  <div class="card">
+    <p>就像你把一份做了一半的工作交给同事：你先把“现在做到哪、目标是什么、下一步做什么”写在一张交接单上（handoff 技能生成交接包），然后把交接单放到同事的新工位（新会话直接输入），最后把你的旧工位收进档案柜（归档旧会话）。你不需要自己跑腿复印，按钮替你完成了整套流程。</p>
+  </div>
+
+  <h2>🛤️ 人话链路（点步骤看细节）</h2>
+  <div class="card">
+    <div class="steps" id="steps">
+      <div class="step"><span class="num">1</span>点击“交接”按钮
+        <div class="detail">按钮在输入框右侧工具行，空闲会话才可点；生成中会变成“生成中”并禁用。</div>
+      </div>
+      <div class="step"><span class="num">2</span>AI 运行 handoff 技能
+        <div class="detail">向当前会话发送以 <code>/handoff</code> 结尾的提示词，宿主识别该手势并注入技能说明，模型据此产出交接包。</div>
+      </div>
+      <div class="step"><span class="num">3</span>截获交接包
+        <div class="detail">监听会话事件流，等这一轮结束，取最后一条助手消息的全文作为交接包（Markdown 原样保留）。</div>
+      </div>
+      <div class="step"><span class="num">4</span>新建会话并输入
+        <div class="detail">在同一工作区创建并打开新会话，把交接包作为新会话的第一条用户消息直接发送。</div>
+      </div>
+      <div class="step"><span class="num">5</span>归档旧会话
+        <div class="detail">交接包成功进入新会话后，旧会话通过现有归档能力收进归档列表并从侧栏隐藏。</div>
+      </div>
+    </div>
+    <p>💡 任何一步失败（比如没装 handoff 技能、模型没产出交接包），都<b>不会归档旧会话</b>，输入框会给出对应提示。</p>
+  </div>
+
+  <h2>📦 动了哪几块</h2>
+  <div class="card">
+    <div class="grid2">
+      <div><p>✅ <b>新插件包</b>（<span class="file">packages/client/ui-handoff</span>）<br>按钮组件、中英文文案、纯编排逻辑、单元与组合测试、README。</p></div>
+      <div><p>✅ <b>输入框注册</b>（<span class="file">packages/bundle/web-app/cordis.patch.yml</span> 等 4 处）<br>把插件挂进 Web 配置、依赖清单与编译入口。</p></div>
+    </div>
+  </div>
+
+  <h2>🧪 怎么亲手验证</h2>
+  <div class="card">
+    <p id="howto">1) 确保本机 <code>~/.agents/skills/handoff</code> 下有 handoff 技能；<br>
+    2) 启动 <code>dsh --profile web</code> 并打开浏览器；<br>
+    3) 新建/打开一个空闲会话，聊几句让任务有上下文；<br>
+    4) 点击输入框右侧的 <b>“交接”</b> 按钮；<br>
+    5) 应看到：按钮变“生成中”→ 新会话自动打开且第一条消息就是交接包 → 旧会话从侧栏消失（归档）。</p>
+    <button class="copy" data-copy="howto">📋 复制验证步骤</button>
+  </div>
+
+  <h2>📁 看改动代码（默认折叠）</h2>
+  <div class="card">
+    <details>
+      <summary>核心编排逻辑（<span class="file">src/client/handoff.ts</span>）</summary>
+      <div class="body">
+        <pre><code>// 核心流程：查技能 → 订阅事件 → 发 /handoff → 等 turn/end → 提取最后一条助手文本
+const fromSeq = lastSeqOf(deps.eventWindow(sessionId))
+subscribeEvents(sessionId, () => {
+  const extraction = extractHandoffPackage(eventWindow.entries, fromSeq)
+  if (extraction.kind === 'pending') return
+  if (extraction.text === '') reject(no-package)
+  else resolve(extraction.text)
+})
+await deps.prompt(sessionId, promptText)   // 提示词以 /handoff 结尾
+const packageText = await packagePromise    // 等的就是这一步的结果
+const newId = await deps.createSession(workspaceOf(sessionId))
+deps.openSession(newId)
+await deps.prompt(newId, packageText)      // 交接包作为新会话第一条消息
+await deps.archiveSession(sessionId)        // 最后才归档</code></pre>
+      </div>
+    </details>
+    <details>
+      <summary>按钮组件（<span class="file">src/client/HandoffButton.tsx</span>）</summary>
+      <div class="body">
+        <pre><code>const disabled = pending || session.removed || session.running
+  || session.subagent !== null || machineBusy
+&lt;button aria-label={pending ? '生成中' : '交接'} disabled={disabled}
+        onClick={() => void run()}&gt;{label}&lt;/button&gt;</code></pre>
+      </div>
+    </details>
+    <details>
+      <summary>插件注册（<span class="file">src/client/index.ts</span>）</summary>
+      <div class="body">
+        <pre><code>ctx.slots.inject('conversation.input.right', () => ctx.slots.register({
+  name: 'conversation.input.right', id: 'handoff', order: 90, locale: 'handoff',
+  inject: sessionId =&gt; ({ onHandoff: ... }),
+}, HandoffButton))</code></pre>
+      </div>
+    </details>
+  </div>
+
+  <h2>🛡️ 没动什么 / 风险边界</h2>
+  <div class="card">
+    <p>🚫 <b>没有改会话日志格式、Agent 循环或公共 API</b>——交接包和触发提示词都是普通 <code>user/message</code>，模型可见内容依旧能从日志完整重建。</p>
+    <p>⚠️ <b>依赖 handoff 技能存在</b>：技能不在技能目录时按钮会提示“未找到 handoff 技能”，不会乱发消息。</p>
+    <p>⚠️ <b>自动流程无预览</b>：按你确认的默认行为，交接包直接作为新会话首条消息发出、旧会话自动归档，没有人工复查步骤（未来可加草稿预览）。</p>
+  </div>
+
+  <h2>✅ 验证事实</h2>
+  <div class="card">
+    <p><span class="tag green">通过</span> 新增测试 21/21（编排单测 + 组件测试 + 真实组合/Loader 释放测试）</p>
+    <p><span class="tag green">通过</span> 全量 GUI 测试 295 文件 / 3876 用例</p>
+    <p><span class="tag green">通过</span> 类型检查 <code>tsc -b tsconfig.client.json</code>、oxlint、客户端包/i18n 校验、typo 检查、打包</p>
+    <p><span class="tag amber">说明</span> hygiene 15 项中 14 项通过；唯一失败 <code>verify-cordis-config</code> 指向既有测试夹具 <span class="file">apps/cli/tests/profiles/acp/cordis.yml</span>（2026-08-24 提交引入），与本次改动无关。</p>
+    <p><span class="tag amber">未执行</span> 浏览器页面验收门：当前环境无浏览器工具，按 web-verify 规则如实标记 BLOCKED，不以自动化测试冒充 PASS。</p>
+  </div>
+
+  <p class="file">基于真实 diff 生成 · 不含任何密钥或隐私数据</p>
+</main>
+<script>
+  document.querySelectorAll('.step').forEach(function (step) {
+    step.addEventListener('click', function () { step.classList.toggle('open') })
+  })
+  document.querySelectorAll('button.copy').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var id = btn.getAttribute('data-copy')
+      var text = document.getElementById(id).innerText
+      navigator.clipboard.writeText(text).then(function () {
+        var old = btn.textContent
+        btn.textContent = '✅ 已复制'
+        setTimeout(function () { btn.textContent = old }, 1200)
+      })
+    })
+  })
+</script>
+</body>
+</html>

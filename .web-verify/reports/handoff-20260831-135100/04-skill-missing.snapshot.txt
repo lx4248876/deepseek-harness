@@ -1,0 +1,74 @@
+- generic [ref=f4e4]:
+  - generic [ref=f4e7]:
+    - generic [ref=f4e8]:
+      - button "新建会话" [ref=f4e9] [cursor=pointer]:
+        - generic [ref=f4e17]:
+          - generic [ref=f4e18]: DSH 本地构建
+          - generic [ref=f4e19]: 0.1.2-alpha.2-593d1c4
+      - button "收起侧边栏" [ref=f4e20] [cursor=pointer]
+    - button "新建会话" [ref=f4e23] [cursor=pointer]:
+      - generic [ref=f4e26]: 新会话
+    - generic [ref=f4e29]:
+      - generic [ref=f4e30]:
+        - generic [ref=f4e31]: 工作区
+        - generic [ref=f4e33]:
+          - button "搜索会话" [ref=f4e34] [cursor=pointer]
+          - textbox "搜索会话…"
+        - generic [ref=f4e38]:
+          - button "视图选项" [ref=f4e40] [cursor=pointer]
+          - button "添加工作区" [ref=f4e43] [cursor=pointer]
+      - tree "会话" [ref=f4e49]:
+        - generic [ref=f4e50]:
+          - treeitem "deepseek-harness" [expanded] [ref=f4e1598] [cursor=pointer]
+          - 'treeitem "进行中 # 任务交接包 ## 主任务 完成并 15分钟" [ref=f4e1691] [cursor=pointer]':
+            - generic [ref=f4e1477]: 进行中
+            - generic [ref=f4e1488]: "# 任务交接包 ## 主任务 完成并"
+            - generic [ref=f4e1489]: 15分钟
+          - treeitem "升级 5小时" [ref=f4e1491] [cursor=pointer]:
+            - generic [ref=f4e1493]: 升级
+            - generic [ref=f4e1494]: 5小时
+        - generic [ref=f4e58]:
+          - treeitem "product-cost" [expanded] [ref=f4e60] [cursor=pointer]
+          - treeitem "新会话" [selected] [ref=f4e1604] [cursor=pointer]
+          - treeitem "已完成 看看现在的用户核算 我需要改 5分钟" [ref=f4e1693] [cursor=pointer]:
+            - generic [ref=f4e147]: 已完成
+            - generic [ref=f4e158]: 看看现在的用户核算 我需要改
+            - generic [ref=f4e159]: 5分钟
+          - treeitem "系统设置里面 快速测算 用户 7分钟" [ref=f4e1689] [cursor=pointer]:
+            - generic [ref=f4e173]: 系统设置里面 快速测算 用户
+            - generic [ref=f4e174]: 7分钟
+        - treeitem "my-skills" [ref=f4e69] [cursor=pointer]
+        - treeitem "base" [ref=f4e77] [cursor=pointer]
+        - treeitem "cost" [ref=f4e85] [cursor=pointer]
+        - treeitem "pi-web" [ref=f4e93] [cursor=pointer]
+    - button "设置" [ref=f4e103] [cursor=pointer]
+  - generic [ref=f4e1613]:
+    - generic [ref=f4e1616]:
+      - generic [ref=f4e1621]: 探索未至之境
+      - generic [ref=f4e1622]: 预览版
+    - generic [ref=f4e1623]:
+      - button "选择工作区" [ref=f4e1624] [cursor=pointer]:
+        - generic [ref=f4e1628]: product-cost
+      - button "极简模式" [ref=f4e1690] [cursor=pointer]
+    - generic [ref=f4e1643]:
+      - generic [ref=f4e1645]:
+        - textbox "描述你想要构建的内容… / 调用指令 @ 文件或对话" [ref=f4e1646]
+        - generic: 描述你想要构建的内容… / 调用指令 @ 文件或对话
+      - generic [ref=f4e1647]:
+        - generic [ref=f4e1648]:
+          - button "指令" [ref=f4e1649] [cursor=pointer]
+          - button "访问模式，当前：完全权限" [ref=f4e1654] [cursor=pointer]:
+            - generic [ref=f4e1660]: 完全权限
+        - generic [ref=f4e1664]:
+          - generic [ref=f4e1666]:
+            - alert [ref=f4e1692]: 未找到 handoff 技能，请先安装到技能目录。
+            - button "交接" [ref=f4e1667] [cursor=pointer]
+          - button "选择模型，当前 deepseek/deepseek-v4-flash-0731，推理等级 Max" [ref=f4e1670] [cursor=pointer]:
+            - generic [ref=f4e1671]: deepseek/deepseek-v4-flash-0731
+            - generic [ref=f4e1672]: Max
+          - button "发送消息" [disabled] [ref=f4e1675]
+  - generic [ref=f4e1679]:
+    - generic [ref=f4e1680]:
+      - generic: 详情
+      - button "关闭详情" [ref=f4e1681] [cursor=pointer]
+    - generic [ref=f4e1684]: 点击消息流中的工具行查看详情

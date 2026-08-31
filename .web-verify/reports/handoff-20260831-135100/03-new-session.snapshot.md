@@ -1,0 +1,123 @@
+- generic [ref=e4]:
+  - generic [ref=e7]:
+    - generic [ref=e8]:
+      - button "新建会话" [ref=e9] [cursor=pointer]:
+        - generic [ref=e17]:
+          - generic [ref=e18]: DSH 本地构建
+          - generic [ref=e19]: 0.1.2-alpha.2-593d1c4
+      - button "收起侧边栏" [ref=e20] [cursor=pointer]
+    - button "新建会话" [ref=e23] [cursor=pointer]:
+      - generic [ref=e26]: 新会话
+    - generic [ref=e29]:
+      - generic [ref=e30]:
+        - generic [ref=e31]: 工作区
+        - generic [ref=e33]:
+          - button "搜索会话" [ref=e34] [cursor=pointer]
+          - textbox "搜索会话…"
+        - generic [ref=e38]:
+          - button "视图选项" [ref=e40] [cursor=pointer]
+          - button "添加工作区" [ref=e43] [cursor=pointer]
+      - tree "会话" [ref=e49]:
+        - treeitem "deepseek-harness" [ref=e52] [cursor=pointer]
+        - generic [ref=e58]:
+          - treeitem "product-cost" [expanded] [ref=e60] [cursor=pointer]
+          - 'treeitem "# 任务交接包 ## 主任务 丁腈手 1分钟" [selected] [ref=e1421] [cursor=pointer]':
+            - generic [ref=e1092]: "# 任务交接包 ## 主任务 丁腈手"
+            - generic [ref=e1093]: 1分钟
+          - 'treeitem "已完成 # 任务交接包 ## 主任务 修复「 8分钟" [ref=e1422] [cursor=pointer]':
+            - generic [ref=e73]: 已完成
+            - generic [ref=e84]: "# 任务交接包 ## 主任务 修复「"
+            - generic [ref=e85]: 8分钟
+          - treeitem "继续导入其他产品 2小时" [ref=e87] [cursor=pointer]:
+            - generic [ref=e89]: 继续导入其他产品
+            - generic [ref=e90]: 2小时
+        - treeitem "my-skills" [ref=e93] [cursor=pointer]
+        - treeitem "base" [ref=e101] [cursor=pointer]
+        - treeitem "cost" [ref=e109] [cursor=pointer]
+        - treeitem "pi-web" [ref=e117] [cursor=pointer]
+    - button "设置" [ref=e127] [cursor=pointer]
+  - generic [ref=e1094]:
+    - banner [ref=e1096]:
+      - generic [ref=e1097]:
+        - generic [ref=e1098]:
+          - navigation "会话层级" [ref=e1099]:
+            - 'button "# 任务交接包 ## 主任务 丁腈手" [disabled] [ref=e1101]'
+          - generic "许愿模式的精简版:相同提示词,只保留核心编辑工具链。" [ref=e1104]: 精简许愿模式
+        - button "Session 日志" [ref=e1112] [cursor=pointer]
+      - tablist [ref=e1116]:
+        - tab "对话" [selected] [ref=e1117] [cursor=pointer]
+        - tab "轨迹" [ref=e1118] [cursor=pointer]
+    - generic [ref=e1120]:
+      - generic [ref=e1126]:
+        - button "系统提示词" [ref=e1130] [cursor=pointer]
+        - generic [ref=e1142]:
+          - generic [ref=e1143]: "# 任务交接包 ## 主任务 丁腈手套种子按 **2026-09-01 用户再拍板**改回「简版」结构（无产品参数、无逐项材料），并完成验证、文档同步与收尾。 ## 完成标准 - `src/features/cost-engine/seed/nitrile.ts` 简版结构落地：胶乳 `weightPrice`（6500 元/吨、固化量 44%）＋辅料=胶乳×7% 单行联动、无 `params`、`mgmtPercent: 0`（代码已改，待验证）。 - 金标准复现：不含税≈`122.73863636363636` / 含税≈`123.77863636363637`（容差 1e-6），`pnpm verify` 全绿。 - 简版页面验收重跑并落证据（现有报告是改前参数版，不能冒充简版 PASS）。 - 文档同步（spec 变更记录或 change-explainer、project-map 已修正）＋提交（提交范围待用户确认）。 ## 当前状态 **进行中**。代码（seed + 金标准测试）已于 2026-08-31 13:56 改完；但改动后**尚未运行任何测试/verify**，简版页面验收缺失，文档未同步，工作区未提交。 ## 已完成事项 - `src/features/cost-engine/seed/nitrile.ts` 简版化：保留 8 组规格全量；胶乳按重量计价 6500/固化量44%；辅料单行联动 `{kind:\"linkage\", baseRef:\"latex\", rate:0.07}`；去掉 `params` 与硫磺/氧化锌/促进剂/色料逐项材料；`mgmtPercent: 0`（统一口径）。 - `src/features/cost-engine/seed/nitrile.test.ts` 更新：金标准改为 122.7386…/123.7786…；新增断言 `cfg.params` 为 undefined、辅料联动、辅料金额≈4.136363636363636、8 组规格维度、校验通过。 - `docs/project-map.md` 本轮已按代码修正（见「项目地图引用」）。 ## 已确认的决定/限制 - **2026-09-01 用户再拍板**：丁腈改回简版——无产品参数、无逐项材料；胶乳=按重量计价 6500 元/吨（**维持 6500，不用**老仓 seed JSON 内部 `latexUnitPrice=6300` 参考价）、固化量 44%；辅料=胶乳×7% 单行联动；管理费默认 0% 统一口径。 - 金标准：不含税≈122.73863636363636 / 含税≈123.77863636363637，容差 1e-6。 - harness 机器约束：feature 只允许 own-feature/shared-schema + zod；不得改受管文件（AGENTS/CLAUDE/.gitignore/.harness 等，`docs/project-map.md` 可提交可改）。 - 页面验收底座事实：当前会话无 `mcp__browser__*`（web profile 未配桥），只能走显式本地 Playwright 适配器并在报告中如实声明、禁漂移。 ## 重要信息回顾 - 用户偏好/表态：丁腈结构先被拍板为「公式＋产品参数（11 参数：胶乳单价/固化量/辅料合计占比＋硫磺/氧化锌/促进剂/色料 用量占比与单价）」并完成 web-verify PASS 25；随后**再拍板改回简版**；胶乳单价维持 6500。 - 被否方案及理由：老仓 seed JSON 的 `latexUnitPrice=6300` 被否（与 Excel/单测/现行种子冲突，用户选 6500 口径）。 - 失败尝试及原因：web-verify 脚本首次运行 4/4b/5 失败——`fill` 只触发 `input` 不触发 `change`，补 `blur` 后通过（应用行为本身正确）。⚠️ 现有 `nitrile_verify.py` 断言 11 参数＋硫磺 formula，**对简版直接复跑必 FAIL**，不能复用。 - 讨论中的关键结论：`docs/project-map.md` 原写「2026-09-01 用户拍板：公式＋产品参数」，与当前代码冲突，**已按代码修正为「再拍板简版」**。 ## 关键资料 - 种子：`src/features/cost-engine/seed/nitrile.ts`（简版，当前实现） - 金标准测试：`src/features/cost-engine/seed/nitrile.test.ts` - 引擎求值：`src/features/cost-engine/service.ts`（`computeProduct`/`round2`）、`schema.ts`（operator 四层模型＋params） - 规格文档：`docs/specs/2026-08-28-port-more-products/spec.md`（§15/§16 丁腈补齐与「公式＋产品参数」历史记录、金标准 122.7386…；**再拍板简版未写入**） - 旧验收证据（改前参数版）：`.web-verify/reports/2026-09-01-nitrile-params-radio/report.md`（PASS 25/0/0；底座=显式本地 Playwright 适配器，非 harness 原生） - 验证脚本（需按简版改写）：`.web-verify/scripts/nitrile_verify.py` - 命令：`pnpm verify`（typecheck && lint && test && check:layout && check:boundaries && check:managed）；`pnpm dev` 起 5173 前端＋8787 后端 ## 阻塞/缺口 - 简版代码改动后**未跑任何测试**，`pnpm verify` 当前是否全绿未知。 - 简版页面验收缺失：既有报告/脚本全部针对 11 参数版，直接复跑必 FAIL，需要改写断言。 - 无再拍板专属 spec 变更记录或 change-explainer（`docs/specs/2026-08-28-port-more-products/spec.md` §16 描述的是参数版）。 - 整个工作区自 `a3342cf` 起有大量跨批次未提交改动，本次任务的**提交范围/是否拆提交未定**。 ## 唯一最优先的下一步 运行 `pnpm verify`（兜底先跑 `pnpm vitest run src/features/cost-engine/seed/nitrile.test.ts` 与 `pnpm typecheck`）确认简版金标准测试是否通过；通过后再改写 `.web-verify/scripts/nitrile_verify.py` 为简版断言并重跑页面验收。 ## 项目地图引用 - 路径：`docs/project-map.md` - 说明：跨任务项目骨架地图（目录职责＋主入口＋关键链路）。请先读此地图，再按任务深描定向精读；不要无目标全库漫游。 - 本轮已按代码修正：丁腈种子条目由「公式＋产品参数」改为「2026-09-01 再拍板简版」，并在更新说明新增该批次记录。 ## 任务深描 - 入口：web 列表「导入示例产品」→ `web/src/store.ts` `importSampleProducts` → `buildNitrileConfig()`（`src/features/cost-engine/index.ts` 导出 11 款 builder 之一）。 - 编排/控制：`computeProduct`（`src/features/cost-engine/service.ts`）校验→规格→D→原料→成本项→A→C→B→小计→管理费→税费→不含税/含税＋lines；保存走 port 校验后 UPSERT（`src/adapters/cost-engine/sqlite-config-repository.ts`）。 - 核心：`seed/nitrile.ts` 配置字面量——`latex.operator = {kind:\"weightPrice\", weightDimKey:\"weight\", pricePerTon:6500, yieldFactor:0.44}`、`auxiliary.operator = {kind:\"linkage\", baseRef:\"latex\", rate:0.07}`、`calc.mgmtPercent=0`；金标准锚点在 `seed/nitrile.test.ts`。 - 出口：核算单 lines（含「辅料」金额≈4.136363636363636）、`GET /api/products/nitrile` 配置 JSON（无 `params`）、供管配置页「成本参数」卡（**不应再出现「产品参数」组**）。 - 关键点：`src/features/cost-engine/seed/nitrile.ts`、`seed/nitrile.test.ts`、`src/features/cost-engine/service.ts`、`.web-verify/scripts/nitrile_verify.py`。 - 与项目地图链路对应：「通用成本引擎求值」链路（seed(11) 落点）。 ## 代码任务附加信息 - 改动/文件：`src/features/cost-engine/seed/nitrile.ts`（简版化）、`seed/nitrile.test.ts`（金标准＋结构断言）、`docs/project-map.md`（本轮修正）。 - 验证或测试结果：**未运行**（改动后未跑 verify/tests）；旧参数版 web-verify PASS 25/0/0 对简版不适用。 - 失败证据/未验证项：`nitrile_verify.py` 的 `api_nitrile_has_params()` 断言 11 参数＋硫磺 formula，对简版必 FAIL；`pnpm verify` 状态未知。 - 执行命令：`pnpm verify`；单测 `pnpm vitest run src/features/cost-engine/seed/nitrile.test.ts`；起服务 `pnpm dev`（127.0.0.1:5173 / 8787）。 - 下一步技术动作：①跑 verify 确认金标准；②改写 `nitrile_verify.py`（删 11 参数断言，改断言无 `params`、页面无「产品参数」组、辅料联动字段、金标准经 API compute 或右栏数值），重跑并写新报告；③补 `docs/specs/2026-08-28-port-more-products/spec.md` 变更记录或新增 change-explainer；④与用户确认提交范围后 `git add`/`commit`。 ## 新对话接手指令 请把以上内容视为当前任务的事实基线：先读懂全部内容（并先读 `docs/project-map.md`，再沿包内点名路径定向精读），然后用一两句话向用户复述你对主任务、当前状态和下一步的理解。 **在用户明确说继续/动手之前：** - **可以读**：本交接包全文、`docs/project-map.md`、包内点名的少数路径/资料。 - **不要**：改文件、跑测试、执行「唯一最优先的下一步」；也不要为「先摸清仓库」做无目标全库搜索或漫游。 - 回答实现类/理解类问题时，优先用项目地图＋任务深描＋点名路径；仍不足再沿深描锚点有目标扩读。 遵守「已确认的决定/限制」，把「阻塞/缺口」当作待用户补齐的事项而非自行填补。特别注意：现有 web-verify 证据是改前参数版，简版若称 PASS 必须重新出具报告并声明底座。"
+          - generic [ref=e1145]:
+            - generic [ref=e1146]: 14:01
+            - button "复制" [ref=e1147] [cursor=pointer]
+        - button "11 次工具调用" [ref=e1427] [cursor=pointer]
+        - generic [ref=e1435]:
+          - paragraph [ref=e1436]:
+            - text: 已按交接要求读完
+            - code [ref=e1437]: docs/project-map.md
+            - text: 与点名路径（
+            - code [ref=e1438]: seed/nitrile.ts
+            - text: 、
+            - code [ref=e1439]: seed/nitrile.test.ts
+            - text: 、
+            - code [ref=e1440]: nitrile_verify.py
+            - text: 、旧报告、spec §14/§15、git 状态），并沿路径核实。补充一个交接包未提及的观察：
+            - code [ref=e1441]: .web-verify/reports/2026-09-01-nitrile-pvc-simple/
+            - text: 已存在简版 UI 证据文件（
+            - code [ref=e1442]: 02-nitrile-simple.txt
+            - text: 显示无「产品参数」组、含税 123.78、胶乳 59.09、辅料 4.14），但
+            - strong [ref=e1443]: 没有正式 report.md，也不能算作本次简版验收报告
+            - text: 。
+          - paragraph [ref=e1444]:
+            - strong [ref=e1445]: 我的理解
+            - text: ：主任务是让丁腈种子以「再拍板简版」落地（无 params、无逐项材料；胶乳 weightPrice 6500/44%、辅料=胶乳×7% 联动、mgmt=0），并补齐验证（金标准 122.7386…/123.7786… +
+            - code [ref=e1446]: pnpm verify
+            - text: 全绿）、简版页面验收新证据、spec/change-explainer 文档同步与提交；当前代码与 project-map 已改但改动后
+            - strong [ref=e1447]: 零验证
+            - text: ，
+            - code [ref=e1448]: nitrile_verify.py
+            - text: 仍是 11 参数断言（复跑必 FAIL），简版验收与文档同步缺失，提交范围未定。
+            - strong [ref=e1449]: 下一步
+            - text: （等你确认后执行）：先跑
+            - code [ref=e1450]: pnpm vitest run .../nitrile.test.ts
+            - text: 与
+            - code [ref=e1451]: pnpm verify
+            - text: 确认金标准，再改写脚本为简版断言重跑验收出新报告，补 spec 再拍板记录，最后按你确认的范围提交。
+          - paragraph [ref=e1452]: 请确认「继续」即开始执行；提交范围（整体一次提交 / 按批次拆分）可在验收通过后再定。
+        - generic [ref=e1456]:
+          - button "复制" [ref=e1457] [cursor=pointer]
+          - generic [ref=e1460]:
+            - button "好的回答" [ref=e1461] [cursor=pointer]
+            - button "有问题的回答" [ref=e1464] [cursor=pointer]
+          - button "在新对话中分支" [ref=e1467] [cursor=pointer]
+          - button "用量 176K tok" [ref=e1471] [cursor=pointer]
+          - button "用时 1分12秒" [ref=e1478] [cursor=pointer]
+          - generic [ref=e1483]: 14:02
+      - generic [ref=e1207]:
+        - generic [ref=e1208]:
+          - generic [ref=e1210]:
+            - textbox "发消息或做任务… / 调用指令 @ 文件或对话" [active] [ref=e1211]
+            - generic: 发消息或做任务… / 调用指令 @ 文件或对话
+          - generic [ref=e1212]:
+            - generic [ref=e1213]:
+              - button "指令" [ref=e1214] [cursor=pointer]
+              - button "访问模式，当前：完全权限" [ref=e1219] [cursor=pointer]:
+                - generic [ref=e1225]: 完全权限
+            - generic [ref=e1229]:
+              - button "交接" [ref=e1232] [cursor=pointer]
+              - button "选择模型，当前 deepseek/deepseek-v4-flash-0731，推理等级 Max" [ref=e1235] [cursor=pointer]:
+                - generic [ref=e1236]: deepseek/deepseek-v4-flash-0731
+                - generic [ref=e1237]: Max
+              - button "上下文已用 4%" [ref=e1484] [cursor=pointer]
+              - button "发送消息" [disabled] [ref=e1485]
+        - generic [ref=e1419]: 1 轮 · 6 步| LLM 1分11秒 · 工具调用 0.5秒| 首 token 平均 2.6秒 · 71 tok/s| 缓存命中 76%| 输入 172K tok · 输出 4K tok
+  - generic [ref=e1246]:
+    - generic [ref=e1247]:
+      - generic: 详情
+      - button "关闭详情" [ref=e1248] [cursor=pointer]
+    - generic [ref=e1251]: 点击消息流中的工具行查看详情

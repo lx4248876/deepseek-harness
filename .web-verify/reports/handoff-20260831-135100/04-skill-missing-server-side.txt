@@ -1,0 +1,20 @@
+# d 点复验：服务器侧 catalog 佐证（minimal preset 空技能目录）
+
+- 目标会话: session-0bceece7-a060-46dd-8a2e-79f80ff5b06e（UI 新建「新会话」，product-cost 工作区）
+- 切换 preset 前 `skills/list`（POST /api/skills/list，会话 session-0bceece7…）:
+  13 项：codemap, comment-coverage, debug, deep-understanding, design-taste-frontend,
+  explain-change, find-skills, frontend-design, handoff, run, skill-vetter, spec, web-verify
+  （含 handoff）
+- 动作：`agentPresets/select { agentId: session-0bceece7…, agentPreset: 'minimal' }` → ok: "minimal"
+- 切换 preset 后 `skills/list`（同一会话）: 0 项（handoff 缺失）
+- 浏览器点击「交接」后断言（见 04-skill-missing.snapshot.txt）:
+  - role=alert 文案: 未找到 handoff 技能，请先安装到技能目录。
+  - 按钮未进入「生成中」，仍为可点击「交接」
+  - 源会话「新会话」仍在侧栏且保持选中（未归档）
+  - 未创建任何「# 任务交接包」新会话
+- 结论：runHandoff 在 listSkills 阶段进入 skill-missing 分支（HandoffError('skill-missing')
+  → locales.error.skillMissing），未发消息、未建新会话、未归档源会话。
+- 说明：因本机工具 shell 视图与服务器实际技能根不一致（见报告 d 点历史 FAIL 记录），
+  无法通过改名真实技能根来让当前常驻服务器失配；本复验改以「会话切换 minimal preset
+  （该 preset 的组合不挂载任何技能目录）」使服务器端 skills/list 真实返回空目录，
+  等价进入同一 skill-missing 分支；未停止/重启 dsh 服务（pid 22280 保持运行）。

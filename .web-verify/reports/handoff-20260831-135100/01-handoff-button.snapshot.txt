@@ -1,0 +1,71 @@
+# Page snapshot — handoff button visible (validation point a)
+Page URL: http://127.0.0.1:3080/
+Page Title: DSH 本地构建
+Captured: 2026-08-31 (run handoff-20260831-135100)
+
+```yaml
+- generic [ref=e4]:
+  - generic [ref=e7]:
+    - generic [ref=e8]:
+      - button "新建会话" [ref=e9] [cursor=pointer]:
+        - generic [ref=e17]:
+          - generic [ref=e18]: DSH 本地构建
+          - generic [ref=e19]: 0.1.2-alpha.2-593d1c4
+      - button "收起侧边栏" [ref=e20] [cursor=pointer]
+    - button "新建会话" [ref=e23] [cursor=pointer]:
+      - generic [ref=e26]: 新会话
+    - generic [ref=e29]:
+      - generic [ref=e30]:
+        - generic [ref=e31]: 工作区
+        - generic [ref=e33]:
+          - button "搜索会话" [ref=e34] [cursor=pointer]
+          - textbox "搜索会话…"
+        - generic [ref=e38]:
+          - button "视图选项" [ref=e40] [cursor=pointer]
+          - button "添加工作区" [ref=e43] [cursor=pointer]
+      - tree "会话" [ref=e49]:
+        - treeitem "deepseek-harness" [ref=e52] [cursor=pointer]
+        - generic [ref=e58]:
+          - treeitem "product-cost" [expanded] [ref=e60] [cursor=pointer]
+          - treeitem "新会话" [selected] [ref=e68] [cursor=pointer]
+          - 'treeitem "进行中 # 任务交接包 ## 主任务 修复「 1分钟" [ref=e72] [cursor=pointer]':
+            - generic [ref=e73]: 进行中
+            - generic [ref=e84]: "# 任务交接包 ## 主任务 修复「"
+            - generic [ref=e85]: 1分钟
+          - treeitem "继续导入其他产品 2小时" [ref=e87] [cursor=pointer]:
+            - generic [ref=e89]: 继续导入其他产品
+            - generic [ref=e90]: 2小时
+        - treeitem "my-skills" [ref=e93] [cursor=pointer]
+        - treeitem "base" [ref=e101] [cursor=pointer]
+        - treeitem "cost" [ref=e109] [cursor=pointer]
+        - treeitem "pi-web" [ref=e117] [cursor=pointer]
+    - button "设置" [ref=e127] [cursor=pointer]
+  - generic [ref=e142]:
+    - generic [ref=e145]:
+      - generic [ref=e150]: 探索未至之境
+      - generic [ref=e151]: 预览版
+    - generic [ref=e152]:
+      - button "选择工作区" [ref=e153] [cursor=pointer]:
+        - generic [ref=e157]: product-cost
+      - button "精简许愿模式" [ref=e162] [cursor=pointer]
+    - generic [ref=e172]:
+      - generic [ref=e174]:
+        - textbox "描述你想要构建的内容… / 调用指令 @ 文件或对话" [active] [ref=e175]
+        - generic: 描述你想要构建的内容… / 调用指令 @ 文件或对话
+      - generic [ref=e176]:
+        - generic [ref=e177]:
+          - button "指令" [ref=e178] [cursor=pointer]
+          - button "访问模式，当前：完全权限" [ref=e183] [cursor=pointer]:
+            - generic [ref=e189]: 完全权限
+        - generic [ref=e193]:
+          - button "交接" [ref=e196] [cursor=pointer]
+          - button "选择模型，当前 deepseek/deepseek-v4-flash-0731，推理等级 Max" [ref=e199] [cursor=pointer]:
+            - generic [ref=e200]: deepseek/deepseek-v4-flash-0731
+            - generic [ref=e201]: Max
+          - button "发送消息" [disabled] [ref=e204]
+  - generic [ref=e208]:
+    - generic [ref=e209]:
+      - generic: 详情
+      - button "关闭详情" [ref=e210] [cursor=pointer]
+    - generic [ref=e213]: 点击消息流中的工具行查看详情
+```
