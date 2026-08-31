@@ -1,0 +1,108 @@
+# Page snapshot — handoff pending state (validation point b, first assertion)
+Page URL: http://127.0.0.1:3080/
+Page Title: 请启用 handoff 技能（/handoff） — DSH 本地构建
+Captured: 2026-08-31 (run handoff-20260831-135100)
+
+Key assertions from snapshot:
+- Composer right row shows `button "生成中" [disabled] [ref=e315]` — pending label visible.
+- Sidebar shows selected session `treeitem "进行中 请启用 handoff 技能（/handoff） 刚刚"` — source session running.
+- Status `深度求索中...` and `运行中` present.
+
+Full yaml snapshot follows.
+
+```yaml
+- generic [ref=e4]:
+  - generic [ref=e7]:
+    - generic [ref=e8]:
+      - button "新建会话" [ref=e9] [cursor=pointer]
+      - button "收起侧边栏" [ref=e20] [cursor=pointer]
+    - button "新建会话" [ref=e23] [cursor=pointer]:
+      - generic [ref=e26]: 新会话
+    - generic [ref=e29]:
+      - generic [ref=e30]:
+        - generic [ref=e31]: 工作区
+        - generic [ref=e33]:
+          - button "搜索会话" [ref=e34] [cursor=pointer]
+          - textbox "搜索会话…"
+        - generic [ref=e38]:
+          - button "视图选项" [ref=e40] [cursor=pointer]
+          - button "添加工作区" [ref=e43] [cursor=pointer]
+      - tree "会话" [ref=e49]:
+        - treeitem "deepseek-harness" [ref=e52] [cursor=pointer]
+        - generic [ref=e58]:
+          - treeitem "product-cost" [expanded] [ref=e60] [cursor=pointer]
+          - treeitem "进行中 请启用 handoff 技能（/handoff） 刚刚" [selected] [ref=e215] [cursor=pointer]:
+            - generic [ref=e69]: 进行中
+            - generic [ref=e70]: 请启用 handoff 技能（/handoff）
+            - generic [ref=e226]: 刚刚
+          - 'treeitem "进行中 # 任务交接包 ## 主任务 修复「 3分钟" [ref=e320] [cursor=pointer]':
+            - generic [ref=e73]: 进行中
+            - generic [ref=e84]: "# 任务交接包 ## 主任务 修复「"
+            - generic [ref=e85]: 3分钟
+          - treeitem "继续导入其他产品 2小时" [ref=e87] [cursor=pointer]:
+            - generic [ref=e89]: 继续导入其他产品
+            - generic [ref=e90]: 2小时
+        - treeitem "my-skills" [ref=e93] [cursor=pointer]
+        - treeitem "base" [ref=e101] [cursor=pointer]
+        - treeitem "cost" [ref=e109] [cursor=pointer]
+        - treeitem "pi-web" [ref=e117] [cursor=pointer]
+    - button "设置" [ref=e127] [cursor=pointer]
+  - generic [ref=e136]:
+    - banner [ref=e229]:
+      - generic [ref=e230]:
+        - generic [ref=e231]:
+          - navigation "会话层级" [ref=e232]:
+            - button "请启用 handoff 技能（/handoff）" [disabled] [ref=e234]
+          - generic "许愿模式的精简版:相同提示词,只保留核心编辑工具链。" [ref=e237]: 精简许愿模式
+        - button "Session 日志" [ref=e245] [cursor=pointer]
+      - tablist [ref=e249]:
+        - tab "对话" [selected] [ref=e250] [cursor=pointer]
+        - tab "轨迹" [ref=e251] [cursor=pointer]
+    - generic [ref=e138]:
+      - generic [ref=e257]:
+        - button "系统提示词" [ref=e261] [cursor=pointer]
+        - generic [ref=e273]:
+          - generic [ref=e274]: 请启用 handoff 技能（/handoff），为当前任务生成交接包。
+          - generic [ref=e276]:
+            - generic [ref=e277]: 13:56
+            - button "复制" [ref=e278] [cursor=pointer]
+        - button "上下文注入 ~/.dsh/AGENTS.md, AGENTS.md, CLAUDE.md" [ref=e284] [cursor=pointer]
+        - button "上下文注入 skill-catalog" [ref=e300] [cursor=pointer]:
+          - generic [ref=e310]: 上下文注入
+          - generic [ref=e312]: skill-catalog
+        - button "思考 The user explicitly asks to enable the handoff skill (/handoff) to generate a handoff package for the current task..." [ref=e328] [cursor=pointer]
+        - button "Skill handoff" [ref=e344] [cursor=pointer]:
+          - generic [ref=e352]: Skill
+          - generic [ref=e354]: handoff
+        - button "Pwsh List files in workspace root" [ref=e361] [cursor=pointer]:
+          - generic [ref=e370]: Pwsh
+          - generic [ref=e372]: List files in workspace root
+        - button "Glob **/*" [ref=e379] [cursor=pointer]:
+          - generic [ref=e387]: Glob
+          - generic [ref=e389]: "**/*"
+        - generic [ref=e395]:
+          - generic [ref=e396]: 运行中
+          - button "思考 The" [ref=e398] [cursor=pointer]:
+            - generic [ref=e406]: 思考
+            - generic [ref=e408]: The
+        - status [ref=e313]: 深度求索中...
+      - generic [ref=e171]:
+        - generic [ref=e172]:
+          - generic [ref=e174]:
+            - textbox "发消息或做任务… / 调用指令 @ 文件或对话" [ref=e314]
+          - generic [ref=e176]:
+            - generic [ref=e177]:
+              - button "指令" [ref=e178] [cursor=pointer]
+              - button "访问模式，当前：完全权限" [ref=e183] [cursor=pointer]
+            - generic [ref=e193]:
+              - button "生成中" [disabled] [ref=e315]
+              - button "选择模型，当前 deepseek/deepseek-v4-flash-0731，推理等级 Max" [ref=e199] [cursor=pointer]
+              - button "上下文已用 2%" [ref=e410] [cursor=pointer]
+              - button "停止生成" [ref=e316] [cursor=pointer]
+        - generic [ref=e414]: 1 轮 · 1 步| LLM 3.6秒 · 工具调用 2.9秒| 首 token 平均 1.5秒 · 119 tok/s| 缓存命中 66%| 输入 10.8K tok · 输出 251 tok
+  - generic [ref=e208]:
+    - generic [ref=e209]:
+      - generic: 详情
+      - button "关闭详情" [ref=e210] [cursor=pointer]
+    - generic [ref=e213]: 点击消息流中的工具行查看详情
+```
