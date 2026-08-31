@@ -55,6 +55,7 @@
 - button "Add attachment":
   - img
 - 'button "Access mode, current: Read Only"': Read Only
+- button "Handoff"
 - button "Select model, current github-webhook-review-test/reply":
   - text: github-webhook-review-test/reply
   - img
