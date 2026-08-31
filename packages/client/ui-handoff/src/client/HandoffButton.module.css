@@ -1,0 +1,44 @@
+/* HandoffButton: compact composer-tool-row action; matches the InputBar
+   add-button geometry (14px label, pill hover, dim disabled). */
+
+.root {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+}
+
+.error {
+  max-width: 220px;
+  overflow: hidden;
+  font-size: 12px;
+  line-height: 20px;
+  color: var(--dsw-alias-state-error-primary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 28px;
+  padding: 0 10px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  font-size: 13px;
+  line-height: 24px;
+  color: var(--dsw-alias-label-tertiary);
+  cursor: pointer;
+}
+
+.button:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+  color: var(--dsw-alias-label-secondary);
+}
+
+.button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
