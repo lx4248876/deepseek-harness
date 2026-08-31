@@ -1,0 +1,186 @@
+- generic [ref=f1e4]:
+  - generic [ref=f1e7]:
+    - generic [ref=f1e8]:
+      - button "新建会话" [ref=f1e9] [cursor=pointer]:
+        - generic [ref=f1e17]:
+          - generic [ref=f1e18]: DSH 本地构建
+          - generic [ref=f1e19]: 0.1.2-alpha.2-593d1c4
+      - button "收起侧边栏" [ref=f1e20] [cursor=pointer]
+    - button "新建会话" [ref=f1e23] [cursor=pointer]:
+      - generic [ref=f1e26]: 新会话
+    - generic [ref=f1e29]:
+      - generic [ref=f1e30]:
+        - generic [ref=f1e31]: 工作区
+        - generic [ref=f1e33]:
+          - button "搜索会话" [ref=f1e34] [cursor=pointer]
+          - textbox "搜索会话…"
+        - generic [ref=f1e38]:
+          - button "视图选项" [ref=f1e40] [cursor=pointer]
+          - button "添加工作区" [ref=f1e43] [cursor=pointer]
+      - tree "会话" [ref=f1e49]:
+        - generic [ref=f1e50]:
+          - treeitem "deepseek-harness" [expanded] [ref=f1e52] [cursor=pointer]
+          - 'treeitem "等待回答 # 任务交接包 ## 主任务 完成并 7分钟" [selected] [ref=f1e743] [cursor=pointer]':
+            - generic [ref=f1e326]: 等待回答
+            - generic [ref=f1e329]: "# 任务交接包 ## 主任务 完成并"
+            - generic [ref=f1e330]: 7分钟
+          - treeitem "进行中 执行页面验收门（web-verify）： 11分钟" [ref=f1e331] [cursor=pointer]:
+            - generic [ref=f1e65]: 进行中
+            - generic [ref=f1e76]: 执行页面验收门（web-verify）：
+            - generic [ref=f1e77]: 11分钟
+          - treeitem "新增一个插件 就在输入框里面 47分钟" [ref=f1e332] [cursor=pointer]:
+            - generic [ref=f1e81]: 新增一个插件 就在输入框里面
+            - generic [ref=f1e82]: 47分钟
+          - treeitem "升级 5小时" [ref=f1e84] [cursor=pointer]:
+            - generic [ref=f1e86]: 升级
+            - generic [ref=f1e87]: 5小时
+        - treeitem "product-cost" [ref=f1e90] [cursor=pointer]
+        - treeitem "my-skills" [ref=f1e98] [cursor=pointer]
+        - treeitem "base" [ref=f1e106] [cursor=pointer]
+        - treeitem "cost" [ref=f1e114] [cursor=pointer]
+        - treeitem "pi-web" [ref=f1e122] [cursor=pointer]
+    - button "设置" [ref=f1e132] [cursor=pointer]
+  - generic [ref=f1e333]:
+    - banner [ref=f1e335]:
+      - generic [ref=f1e336]:
+        - generic [ref=f1e337]:
+          - navigation "会话层级" [ref=f1e338]:
+            - 'button "# 任务交接包 ## 主任务 完成并" [disabled] [ref=f1e340]'
+          - generic "许愿模式的精简版:相同提示词,只保留核心编辑工具链。" [ref=f1e343]: 精简许愿模式
+        - button "Session 日志" [ref=f1e351] [cursor=pointer]
+      - tablist [ref=f1e355]:
+        - tab "对话" [selected] [ref=f1e356] [cursor=pointer]
+        - tab "轨迹" [ref=f1e357] [cursor=pointer]
+    - generic [ref=f1e359]:
+      - generic [ref=f1e365]:
+        - button "系统提示词" [ref=f1e369] [cursor=pointer]
+        - generic [ref=f1e381]:
+          - generic [ref=f1e383]:
+            - text: "# 任务交接包 ## 主任务 完成并收尾 Web 客户端 Composer「交接」按钮功能：`@deepseek-ai/dsh-client-ui-handoff`（调用 handoff 技能 → 生成交接包 → 新会话继续 → 归档源会话），当前为工作区唯一未提交的进行中任务，停在“实现+定向验证已过、仓库级门禁/文档/提交未做”的收尾阶段。 ## 完成标准 - 新包代码、注册、测试齐全且定向测试全绿（**已达成**：`pnpm exec vitest run packages/client/ui-handoff` = 3 files / 21 tests passed，2026-08-31 14:18 实跑）。 - 仓库级窄门禁通过（按 [dsh-pre-push-checks](.agents/skills/dsh-pre-push-checks/SKILL.md) 选择）：至少 `pnpm run test:gui`；因改动可见 UI/组装输出，需加 `DSH_SNAPSHOT=replay pnpm run test:web`；再按 pre-push 选 typecheck/lint/`verify-client-packages`/`verify-package-*` 等。 - 补充非平凡改动必需的 Agent Note（仓库规则，当前缺失）。 - 清理/决策 `server.log`、`.web-verify/` 是否纳入提交（`server.log` 是端口失败日志，建议不提交）。 - 按用户确认的提交范围完成提交。 ## 当前状态 进行中（提交前）。实现完整、定向单测全绿；已有 2026-08-31 13:51 的实时 web-verify 证据（`.web-verify/reports/handoff-20260831-135100/`，含 composer「交接」按钮、生成中、新会话已收到交接包三张快照）；但仓库级门禁未跑、Agent Note 缺失、提交未做。 ## 已完成事项 - 新建 `packages/client/ui-handoff/`（package.json、tsconfig.json、tsdown.config.ts、src/index.ts 空 node-half、src/invariant.ts、src/client/{index,handoff,HandoffButton,slots,locales}.ts/tsx、CSS Module、README.md）。 - 核心管线 `src/client/handoff.ts`：`runHandoff(deps, sessionId, promptText)` 纯模块（注入 session/workspace faces），含 `extractHandoffPackage` 事件投影与 `HandoffError` 稳定错误码（skill-missing/no-package/prompt-rejected/create-failed/send-failed/archive-failed）。 - 组件 `HandoffButton.tsx`：只做 pending/error 呈现；禁用条件 = pending || session.removed || session.running || session.subagent !== null || input.phase ∈ submitting/adjudicating。 - 三处注册表面已接：`tsconfig.client.json` references 行、`packages/bundle/web-app/cordis.patch.yml` 行（`id: ui-handoff`）、`packages/bundle/web-app/package.json` dependency；另加 `tsconfig.base.json` 三条 path alias 与 `pnpm-lock.yaml` 更新。 - 测试 3 个文件 21 用例：handoff 管线单测、HandoffButton 组件测试（jsdom）、SlotTestRuntime 插件/HMR-disposal/全流程测试。 - 实时 web 验证留证：`.web-verify/reports/handoff-20260831-135100/{01-handoff-button,02-generating,03-new-session}.*`（03 快照显示新会话已载入生成出的「# 任务交接包」，composer 出现「交接」按钮）。 - 变更说明文档：`docs/change-explainers/2026-08-31-ui-handoff-button.html`（未提交）。 - 本轮按 handoff 技能首建项目骨架地图 `docs/project-map.md`（base_ref `03a564ca95`）。 ## 已确认的决定/限制 - 接线方式按 client 新包清单：三注册表面缺一不可（tsconfig.client.json 引用、web-app cordis.patch.yml 行、web-app package.json 依赖）；`dsh.client` 只列包名级 `inject`（信息性），无 `external`。 - 槽位纪律：只贡献 `conversation.input.right` 的 entry（id `handoff`，order 90），不在本包声明/merge SlotMap；locale namespace `handoff`。 - Prompt 文案的 `: /handoff` 必须位于消息末尾（dsh-tool-skill word-boundary 语法），测试有断言。 - README 记录的限制（视为已拍板，勿擅自扩面）：技能缺失时不降级、无草稿预览步骤、in-flight 不可取消且源会话提前 teardown 时 pending 不 settle。 ## 重要信息回顾 - 用户偏好/表态：本轮对话用户只点名启用 handoff 技能生成交接包；把工作树中未提交的 ui-handoff 功能作为“当前任务”处理（若用户本意是别的主任务，需先纠正——见阻塞/缺口）。 - 被否方案及理由：无（当前可见上下文没有讨论并否决过的实现方案）。 - 失败尝试及原因：`pnpm exec vitest run packages/client/ui-handoff --reporter=basic` 启动失败——`Error: Failed to load custom Reporter from basic`/`ERR_LOAD_URL`（vitest 4.1.8 无该 reporter 名），去掉该参数用默认 reporter 后通过；`server.log` 记录一次 `dsh --profile web` 启动失败——`listen EADDRINUSE: address already in use 127.0.0.1:3080`（旧 server 仍占用端口），探活时应复用已运行实例或先释放 3080。 - 讨论中的关键结论：本轮定向验证 21/21 通过；live web-verify 报告已证明端到端流程（生成→新会话→归档）成立；仓库规则要求非平凡改动同 PR 配 Agent Note（当前缺失）。 ## 关键资料 - 新包根：`packages/client/ui-handoff/`（README 含 composition/Model Experience/Known Limitations）。 - 核心管线：`src/client/handoff.ts`；组件 `src/client/HandoffButton.tsx`；浏览器插件 `src/client/index.ts`；文案 `src/client/locales.ts`（zh/en）。 - 注册改动：`packages/bundle/web-app/cordis.patch.yml`、`packages/bundle/web-app/package.json`、`tsconfig.base.json`、`tsconfig.client.json`、`pnpm-lock.yaml`。 - 验证证据：`.web-verify/reports/handoff-20260831-135100/`、`docs/change-explainers/2026-08-31-ui-handoff-button.html`。 - 已跑命令：`pnpm exec vitest run packages/client/ui-handoff` → 3 files / 21 tests passed（约 2.5s）。 - 失败原文：`server.log` → `Error: dsh: plugin tree failed to load ... webserver (@deepseek-ai/dsh-host-webserver): listen EADDRINUSE: address already in use 127.0.0.1:3080`。 - 待跑命令：`pnpm run test:gui`、`DSH_SNAPSHOT=replay pnpm run test:web`、`pnpm --filter"
+            - generic "@deepseek-ai/dsh-client-ui-handoff" [ref=f1e384]: dsh-client-ui-handoff
+            - text: "bundle`（改包后重建 `lib/client.js` 再探活）。 ## 阻塞/缺口 - 仓库级门禁（test:gui、test:web replay、typecheck/lint/verify 系列）本轮未跑，状态未知。 - Agent Note 缺失（非平凡新包必须补）。 - `lib/` 构建产物存在但未确认是否为当前源码的最新产物；若探活需先 `pnpm --filter"
+            - generic "@deepseek-ai/dsh-client-ui-handoff" [ref=f1e389]: dsh-client-ui-handoff
+            - text: "bundle`。 - 提交范围未定：`server.log`/`.web-verify/`/`docs/change-explainers/` 是否纳入提交待用户拍板（`server.log` 建议排除）。 - “当前任务”是依据工作树状态推断的（ui-handoff 收尾）；若用户指别的任务，需在接手时先澄清主任务。 - 本项目此前对话历史不可见：更早的验收口径、是否已有 PR/分支意图未知，需用户补回。 ## 唯一最优先的下一步 （先向用户复述本包理解并确认“主任务 = ui-handoff 收尾”）然后跑内环门禁 `pnpm run test:gui` 确认全绿；绿后按 dsh-pre-push-checks 补 `DSH_SNAPSHOT=replay pnpm run test:web` 与补 Agent Note，最后与用户确认提交范围再提交。 ## 项目地图引用 - 路径：`docs/project-map.md` - 说明：跨任务项目骨架地图（目录职责 + 主入口 + 关键链路）。请先读此项目地图，再按任务深描定向精读；不要无目标全库漫游。 - 本轮首建（base_ref `03a564ca95`，工作树含未提交 ui-handoff 改动）。 ## 任务深描 - 入口：Web 客户端 Composer 工具行「交接」按钮（slot `conversation.input.right`，id `handoff`，order 90；`packages/client/ui-handoff/src/client/index.ts` 经 `ctx.slots.inject` 注册）。 - 编排/控制：浏览器插件注入 `HandoffDeps`（listSkills/prompt/subscribeEvents/eventWindow/createSession/openSession/archiveSession/workspaceOf，对真实 faces 的映射在 `client/index.ts`）；`runHandoff` 先查技能目录，**先订阅事件再 prompt**（防快速模型在订阅前关轮），事件窗口按 `fromSeq` 过滤后由 `extractHandoffPackage` 提取“首个后续 turn/end 之前最后一条 assistant/message 文本”，依次建新会话、open、把包作为首条消息发出、归档源会话；任一步失败按稳定 code 抛 `HandoffError`，归档前失败不动源会话。 - 核心：`src/client/handoff.ts` 的纯投影逻辑（`extractHandoffPackage`/`lastSeqOf`/`textContent`）与错误码契约；组件只做呈现（`HandoffButton.tsx` 禁用条件 + 错误文案映射）。 - 出口：新会话被打开且首条消息为交接包原文，源会话归档；失败时按钮行显示本地化错误并保持源会话不变；文案走 locale namespace `handoff`（zh/en，`/handoff` 保持消息末尾）。 - 关键点：`packages/client/ui-handoff/src/client/handoff.ts`、`src/client/index.ts`、`src/client/HandoffButton.tsx`、`src/client/locales.ts`、`packages/bundle/web-app/cordis.patch.yml`（row `ui-handoff`）。 - 对应项目地图链路：Web client 插件组装 / UI slot 组合 / Handoff 交接动作。 ## 代码任务附加信息 - 改动/文件：新增 `packages/client/ui-handoff/`（源码+测试+README+构建配置，见“已完成事项”）；修改 `packages/bundle/web-app/cordis.patch.yml`、`packages/bundle/web-app/package.json`、`tsconfig.base.json`、`tsconfig.client.json`、`pnpm-lock.yaml`；本轮新增 `docs/project-map.md`。另有未提交非代码物：`server.log`、`.web-verify/`、`docs/change-explainers/2026-08-31-ui-handoff-button.html`。 - 验证或测试结果：定向 Vitest 3 files / 21 tests **passed**（2026-08-31 14:18 实跑，约 2.5s）；live web-verify 证据存在（13:51 报告：按钮出现、生成中、新会话已收到交接包）。未跑：test:gui、test:web replay、typecheck/lint/verify 系列。 - 失败证据/未验证项：`server.log` EADDRINUSE 3080（启动失败证据，建议不提交）；`--reporter=basic` vitest reporter 不可用；仓库级门禁与 Agent Note 缺失；`lib/` 最新性未确认。 - 执行命令：已跑 `pnpm exec vitest run packages/client/ui-handoff`；下一步 `pnpm run test:gui`，再 `DSH_SNAPSHOT=replay pnpm run test:web`；探活前 `pnpm --filter"
+            - generic "@deepseek-ai/dsh-client-ui-handoff" [ref=f1e394]: dsh-client-ui-handoff
+            - text: "bundle`。 - 下一步技术动作：跑 `pnpm run test:gui` 确认全绿 → 按 pre-push 选择剩余窄门禁 → 补 Agent Note（可沿用 `.agents/notes/implemented/` 下 GUI 相关先例）→ 与用户确认 `server.log`/`.web-verify/` 去留 → 提交。 ## 新对话接手指令 请把以上内容视为当前任务的事实基线：先读懂全部内容，并先读「项目地图引用」指向的 `docs/project-map.md` 以及包内点名的路径，再用一两句话向用户复述你对主任务、当前状态和下一步的理解。 **在用户明确说继续/动手之前：** - **可以读**：本交接包全文；`docs/project-map.md`；交接包内点名的少数路径/资料。 - **不要**：改文件、跑测试、执行「唯一最优先的下一步」；也不要为「先摸清仓库」做无目标全库搜索或漫游。 - 回答实现类/理解类问题时，优先用项目地图 + 任务深描 + 点名路径；仍不足时再沿深描锚点有目标扩读，而不是全库扫。 遵守「已确认的决定/限制」，把「阻塞/缺口」当作待用户补齐的事项而非自行填补。缺失事实必须先补齐，不能臆测。"
+          - generic [ref=f1e399]:
+            - generic [ref=f1e400]: 14:19
+            - button "复制" [ref=f1e401] [cursor=pointer]
+        - button "上下文注入 ~/.dsh/AGENTS.md, AGENTS.md, CLAUDE.md" [ref=f1e407] [cursor=pointer]:
+          - generic [ref=f1e417]: 上下文注入
+          - generic [ref=f1e419]: ~/.dsh/AGENTS.md, AGENTS.md, CLAUDE.md
+        - button "上下文注入 skill-catalog" [ref=f1e423] [cursor=pointer]:
+          - generic [ref=f1e433]: 上下文注入
+          - generic [ref=f1e435]: skill-catalog
+        - 'button "思考 Let me understand the situation. This is a handoff/task-handover package. The user has provided a detailed \"任务交接包\" (task handover package) describing the current state: the ui-handoff feature is implemented and targeted tests pass, but repo-level gates, Agent Note, and commit remain." [ref=f1e443] [cursor=pointer]':
+          - generic [ref=f1e451]: 思考
+          - generic [ref=f1e453]: "Let me understand the situation. This is a handoff/task-handover package. The user has provided a detailed \"任务交接包\" (task handover package) describing the current state: the ui-handoff feature is implemented and targeted tests pass, but repo-level gates, Agent Note, and commit remain."
+        - button "读取 docs\\project-map.md" [ref=f1e460] [cursor=pointer]:
+          - generic [ref=f1e469]: 读取
+          - button "docs\\project-map.md" [ref=f1e471]
+        - button "Glob packages/client/ui-handoff/**/*" [ref=f1e478] [cursor=pointer]:
+          - generic [ref=f1e486]: Glob
+          - generic [ref=f1e488]: packages/client/ui-handoff/**/*
+        - button "Pwsh Show working tree status" [ref=f1e495] [cursor=pointer]:
+          - generic [ref=f1e504]: Pwsh
+          - generic [ref=f1e506]: Show working tree status
+        - button "上下文注入 docs\\AGENTS.md" [ref=f1e510] [cursor=pointer]:
+          - generic [ref=f1e520]: 上下文注入
+          - generic [ref=f1e522]: docs\AGENTS.md
+        - 'button "思考 I''ve read the project map and got git status. Now per the handoff instructions, I should read a few named paths to confirm understanding, then summarize and ask user to confirm the main task before proceeding. Let me read a couple of key files: README, handoff.ts maybe, client/index.ts. Also maybe check .agents/notes structure for Agent Note precedent later — but that''s for later; I can read targeted." [ref=f1e530] [cursor=pointer]':
+          - generic [ref=f1e538]: 思考
+          - generic [ref=f1e540]: "I've read the project map and got git status. Now per the handoff instructions, I should read a few named paths to confirm understanding, then summarize and ask user to confirm the main task before proceeding. Let me read a couple of key files: README, handoff.ts maybe, client/index.ts. Also maybe check .agents/notes structure for Agent Note precedent later — but that's for later; I can read targeted."
+        - button "读取 packages\\client\\ui-handoff\\README.md" [ref=f1e547] [cursor=pointer]:
+          - generic [ref=f1e556]: 读取
+          - button "packages\\client\\ui-handoff\\README.md" [ref=f1e558]
+        - button "读取 packages\\client\\ui-handoff\\src\\client\\handoff.ts" [ref=f1e565] [cursor=pointer]:
+          - generic [ref=f1e574]: 读取
+          - button "packages\\client\\ui-handoff\\src\\client\\handoff.ts" [ref=f1e576]
+        - button "读取 packages\\client\\ui-handoff\\src\\client\\index.ts" [ref=f1e583] [cursor=pointer]:
+          - generic [ref=f1e592]: 读取
+          - button "packages\\client\\ui-handoff\\src\\client\\index.ts" [ref=f1e594]
+        - button "读取 packages\\client\\ui-handoff\\package.json" [ref=f1e601] [cursor=pointer]:
+          - generic [ref=f1e610]: 读取
+          - button "packages\\client\\ui-handoff\\package.json" [ref=f1e612]
+        - button "上下文注入 packages\\AGENTS.md, packages\\CLAUDE.md, packages\\client\\AGENTS.md" [ref=f1e616] [cursor=pointer]:
+          - generic [ref=f1e626]: 上下文注入
+          - generic [ref=f1e628]: packages\AGENTS.md, packages\CLAUDE.md, packages\client\AGENTS.md
+        - generic [ref=f1e632]:
+          - 'button "思考 I now have a good understanding. Per the handoff instructions, I should now restate my understanding in one or two sentences and ask the user to confirm the main task before proceeding. The handoff explicitly says the \"唯一最优先的下一步\" is: first confirm with user \"主任务 = ui-handoff 收尾\", then run inner-loop gates." [ref=f1e636] [cursor=pointer]':
+            - generic [ref=f1e644]: 思考
+            - generic [ref=f1e646]: "I now have a good understanding. Per the handoff instructions, I should now restate my understanding in one or two sentences and ask the user to confirm the main task before proceeding. The handoff explicitly says the \"唯一最优先的下一步\" is: first confirm with user \"主任务 = ui-handoff 收尾\", then run inner-loop gates."
+          - generic [ref=f1e647]:
+            - paragraph [ref=f1e648]:
+              - text: 我已核对交接包、
+              - code [ref=f1e649]: docs/project-map.md
+              - text: 、
+              - code [ref=f1e650]: git status
+              - text: 与新包关键源码（
+              - code [ref=f1e651]: runHandoff
+              - text: 管线、浏览器插件注册、README）。工作树与交接包描述一致：
+              - code [ref=f1e652]: ui-handoff
+              - text: 新包 + 三处注册表面改动未提交，另有
+              - code [ref=f1e653]: .web-verify/
+              - text: 、
+              - code [ref=f1e654]: docs/change-explainers/
+              - text: 、
+              - code [ref=f1e655]: docs/project-map.md
+              - text: 、
+              - code [ref=f1e656]: server.log
+              - text: 未跟踪。
+            - paragraph [ref=f1e657]:
+              - text: 我的理解：
+              - strong [ref=f1e658]:
+                - text: 主任务 = 完成
+                - code [ref=f1e659]: "@deepseek-ai/dsh-client-ui-handoff"
+                - text: 交接按钮功能的收尾
+              - text: ——实现与定向测试（21/21）已绿，剩余是仓库级门禁（
+              - code [ref=f1e660]: test:gui
+              - text: →
+              - code [ref=f1e661]: DSH_SNAPSHOT=replay test:web
+              - text: → pre-push 窄门禁）、补 Agent Note、确认
+              - code [ref=f1e662]: server.log
+              - text: /
+              - code [ref=f1e663]: .web-verify/
+              - text: 等去留，最后按确认范围提交。
+        - generic [ref=f1e668]:
+          - generic [ref=f1e669]: 运行中
+          - button "提问 等待回答" [ref=f1e671] [cursor=pointer]:
+            - generic [ref=f1e680]: 提问
+            - generic [ref=f1e682]: 等待回答
+        - status [ref=f1e683]:
+          - text: 深度求索中...
+          - generic [ref=f1e684]: 7分04秒
+      - region [ref=f1e688]:
+        - generic [ref=f1e689]:
+          - 'heading "是否确认主任务就是「ui-handoff 收尾」（仓库级门禁 → 补 Agent Note → 确认提交范围 → 提交）？确认后我将从内环门禁 `pnpm run test:gui` 开始执行。" [level=2] [ref=f1e691]'
+          - generic [ref=f1e692]:
+            - button "收起问题卡片" [expanded] [ref=f1e693] [cursor=pointer]
+            - button "放弃整组问题" [ref=f1e696] [cursor=pointer]
+        - radiogroup [ref=f1e701]:
+          - radio "确认，开始收尾" [ref=f1e702] [cursor=pointer]:
+            - generic [ref=f1e703]: "1"
+            - generic [ref=f1e705]:
+              - generic [ref=f1e706]: 确认，开始收尾
+              - generic [ref=f1e707]: 推荐
+              - generic [ref=f1e708]: 按交接包计划执行：test:gui → test:web replay → pre-push 窄门禁 → Agent Note → 提交范围确认 → 提交
+          - radio "主任务不是这个" [ref=f1e709] [cursor=pointer]:
+            - generic [ref=f1e710]: "2"
+            - generic [ref=f1e712]:
+              - generic [ref=f1e713]: 主任务不是这个
+              - generic [ref=f1e714]: 若你本意是别的任务，请指出，我会先纠正方向
+          - textbox "输入你的答案" [ref=f1e720]
+        - generic [ref=f1e721]:
+          - generic [ref=f1e722]:
+            - button "上一题" [disabled] [ref=f1e723]
+            - generic [ref=f1e726]: 1 / 1
+            - button "下一题" [disabled] [ref=f1e727]
+          - status [ref=f1e730]
+          - generic [ref=f1e731]:
+            - button "跳过本题" [ref=f1e732] [cursor=pointer]
+            - button "提交" [disabled] [ref=f1e733]
+  - generic [ref=f1e737]:
+    - generic [ref=f1e738]:
+      - generic: 详情
+      - button "关闭详情" [ref=f1e739] [cursor=pointer]
+    - generic [ref=f1e742]: 点击消息流中的工具行查看详情
