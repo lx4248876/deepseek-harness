@@ -257,6 +257,11 @@
     - id: ui-skill
       name: '@deepseek-ai/dsh-client-ui-skill'
 
+    # Composer handoff action: invoke the handoff skill, continue the generated
+    # package in a new conversation, and archive the source session.
+    - id: ui-handoff
+      name: '@deepseek-ai/dsh-client-ui-handoff'
+
     - id: ui-subagent
       name: '@deepseek-ai/dsh-client-ui-subagent'
 
