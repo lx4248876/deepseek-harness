@@ -2,7 +2,7 @@
 set -euo pipefail
 
 repo_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-src_dir="$repo_dir/wish"
+src_dir="$repo_dir/enhanced"
 
 if [ ! -d "$src_dir" ]; then
     echo "错误: 未找到源目录: $src_dir" >&2
@@ -24,7 +24,7 @@ if [ -z "$dsh_dir" ]; then
     exit 1
 fi
 
-target_dir="$dsh_dir/config/agent-presets/wish"
+target_dir="$dsh_dir/config/agent-presets/enhanced"
 
 if [ -d "$target_dir" ]; then
     ts="$(date +%Y%m%d-%H%M%S)"
@@ -39,4 +39,4 @@ fi
 
 cp "$src_dir/agent.cordis.yml" "$src_dir/preset.yml" "$target_dir/"
 echo "已复制 -> $target_dir"
-echo "完成！重启 dsh 后选择许愿模式。"
+echo "完成！重启 dsh 后选择增强模式。"
