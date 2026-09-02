@@ -4,8 +4,8 @@
  * handoff entry at conversation.input.right, the injected verb runs the full
  * pipeline over the fixture sessions (skill check → prompt → event-driven
  * package extraction → new session → archive), and registration disposal
- * rides the plugin fiber (HMR safety). The node half and invariant companion
- * are exercised over the same runtime.
+ * rides the plugin fiber (HMR safety). The node half is exercised over the
+ * same runtime.
  */
 import { Service, type Context } from '@deepseek-ai/cordis'
 import { describe, expect, it, vi } from 'vitest'
@@ -140,8 +140,6 @@ describe('ui-handoff browser plugin', () => {
 })
 
 describe('ui-handoff node half', () => {
-  // The invariant companion is mounted by the vitest-wide invariant host on
-  // every Context this suite creates; its registration is covered there.
   it('the node apply is an inert loader seat', () => {
     expect(() => { nodeApply() }).not.toThrow()
   })
