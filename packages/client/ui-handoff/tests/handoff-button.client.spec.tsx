@@ -32,19 +32,14 @@ const idleSession = {
   awaitingFirstTurn: false,
 } as unknown as SessionSnapshot
 
-const idleInput = {
-  draft: '',
-  imageIds: [],
-  draftRev: 0,
-  phase: 'plain' as const,
-  occurrences: [],
-  queue: [],
+function sessionHook(session: SessionSnapshot): HandoffButtonProps['useSession'] {
+  return selector => selector(session)
 }
 
 function makeProps(overrides: Partial<HandoffButtonProps> = {}): HandoffButtonProps {
   return {
-    session: idleSession,
-    input: idleInput,
+    sessionId: 's',
+    useSession: sessionHook(idleSession),
     t,
     onHandoff: vi.fn(async () => ({ ok: true })),
     ...overrides,
@@ -73,22 +68,23 @@ describe('HandoffButton', () => {
     expect(screen.getByRole<HTMLButtonElement>('button', { name: '生成中' }).disabled).toBe(true)
   })
 
-  it('stays disabled while the session runs, hosts a subagent, is removed, or the machine is busy', () => {
+  it('stays disabled while the session runs, hosts a subagent, is removed, or a submission is in flight', () => {
     for (const session of [
       { ...idleSession, running: true },
       { ...idleSession, subagent: { address: {} } },
       { ...idleSession, removed: true },
     ] as SessionSnapshot[]) {
-      const { unmount } = render(<HandoffButton {...makeProps({ session })} />)
+      const { unmount } = render(<HandoffButton {...makeProps({ useSession: sessionHook(session) })} />)
       expect(screen.getByRole<HTMLButtonElement>('button', { name: '交接' }).disabled).toBe(true)
       unmount()
     }
-    const busy = render(<HandoffButton {...makeProps({ input: { ...idleInput, phase: 'submitting' as const } })} />)
+    const submitting = {
+      ...idleSession,
+      pendingSubmissions: [{ key: 'k', kind: 'prompt', sessionId: 's' }],
+    } as unknown as SessionSnapshot
+    const busy = render(<HandoffButton {...makeProps({ useSession: sessionHook(submitting) })} />)
     expect(screen.getByRole<HTMLButtonElement>('button', { name: '交接' }).disabled).toBe(true)
     busy.unmount()
-    const adjudicating = render(<HandoffButton {...makeProps({ input: { ...idleInput, phase: 'adjudicating' as const } })} />)
-    expect(screen.getByRole<HTMLButtonElement>('button', { name: '交接' }).disabled).toBe(true)
-    adjudicating.unmount()
   })
 
   it('maps known failure codes to localized error copy', async () => {
