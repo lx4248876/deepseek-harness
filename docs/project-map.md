@@ -1,8 +1,8 @@
 # 项目骨架地图
 
 ## 元信息
-- base_ref: `03a564ca95`（master HEAD；工作树含未提交的 `ui-handoff` 改动）
-- 更新说明: 首建（handoff 技能为当前代码任务初始化薄骨架）
+- base_ref: `280c931dd9`（master HEAD；alpha.4 升级合并 + dsh-minimal-turbo 重构后）
+- 更新说明: 增量更新（alpha.4 升级后核对：目录职责/关键链路仍准确；补充 `dsh-minimal-turbo/` 本地预设工具包一行）
 
 ## 目录职责
 | 路径 | 一句话职责 |
@@ -20,6 +20,7 @@
 | `.agents/` | 代理工作流技能与 Agent Notes（`notes/`） |
 | `scripts/` | 仓库门禁与生成器 |
 | `apps/` | 应用入口（`apps/cli` 等） |
+| `dsh-minimal-turbo/` | 本地预设工具包：`minimal`/`enhanced` 预设与一键安装脚本 |
 
 ## 主入口
 - `pnpm dsh --profile headless "task"` — 单任务运行（需 `DEEPSEEK_API_KEY`）
