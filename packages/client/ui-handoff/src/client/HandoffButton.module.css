@@ -26,6 +26,7 @@
   padding: 0 10px;
   border: none;
   border-radius: 999px;
+  corner-shape: round;
   background: transparent;
   font-size: 13px;
   line-height: 24px;
