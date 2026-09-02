@@ -1,11 +1,11 @@
-﻿param(
+param(
     [string]$DshPath = $null
 )
 
 try { chcp 65001 > $null } catch {}
 $ErrorActionPreference = 'Stop'
 $repoDir = Split-Path -Parent $PSScriptRoot
-$srcDir = Join-Path $repoDir 'wish'
+$srcDir = Join-Path $repoDir 'enhanced'
 
 function Resolve-DshDir {
     if ($DshPath) { return $DshPath }
@@ -30,7 +30,7 @@ if (-not $dshDir) {
     exit 1
 }
 
-$targetDir = Join-Path $dshDir 'config\agent-presets\wish'
+$targetDir = Join-Path $dshDir 'config\agent-presets\enhanced'
 
 if (Test-Path -LiteralPath $targetDir) {
     $ts = Get-Date -Format 'yyyyMMdd-HHmmss'
@@ -45,4 +45,4 @@ if (Test-Path -LiteralPath $targetDir) {
 
 Copy-Item -Path (Join-Path $srcDir '*') -Destination $targetDir -Recurse -Force
 Write-Host "已复制 -> $targetDir"
-Write-Host "完成！重启 dsh 后选择许愿模式。"
+Write-Host "完成！重启 dsh 后选择增强模式。"
