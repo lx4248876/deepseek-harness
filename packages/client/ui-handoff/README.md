@@ -14,7 +14,11 @@ The pipeline is a pure module over injected session/workspace faces (`src/client
 4. Create and open a new session in the same workspace and prompt it with the package text.
 5. Archive the source session.
 
-The button disables while the source session is running, hosts a subagent, is removed, or the composer machine is busy. Failures before archiving leave the source session untouched and surface localized copy in the composer row.
+The button disables while the source session is running, hosts a subagent, is removed, or a prompt submission is in flight. Failures before archiving leave the source session untouched and surface localized copy in the composer row.
+
+## Invariant
+
+No invariant companion is published because the browser half registers one composer-tool-row entry whose disposal the HMR-safety spec proves, and `src/client/handoff.ts` is a pure module over injected session/workspace faces, so no independent runtime observations can diverge.
 
 ## Model Experience
 
