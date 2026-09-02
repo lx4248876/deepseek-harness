@@ -2,8 +2,9 @@
  * HandoffButton: the composer-tool-row handoff action. The button owns only
  * pending/error presentation; the whole pipeline (skill check, package
  * generation, new conversation, archive) runs through the injected verb.
- * Disable state derives from the slot owner props: an idle, non-subagent
- * session is the only safe source for a handoff.
+ * Disable state derives from the session-scope standard hook: an idle,
+ * non-subagent session with no in-flight prompt submission is the only safe
+ * source for a handoff.
  */
 
 import { useCallback, useRef, useState } from 'react'
@@ -35,15 +36,16 @@ function errorKey(code: HandoffButtonActions['onHandoff'] extends () => Promise<
 
 /**
  * The composer-tool-row handoff action.
- * @param props - owner session/input state, the injected verb, and locale.
+ * @param props - session-scope runtime (sessionId and useSession), the injected verb, and locale.
  */
-export function HandoffButton({ session, input, onHandoff, t }: HandoffButtonProps) {
+export function HandoffButton({ useSession, onHandoff, t }: HandoffButtonProps) {
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<HandoffKey | null>(null)
   const pendingRef = useRef(false)
 
-  const machineBusy = input.phase === 'submitting' || input.phase === 'adjudicating'
-  const disabled = pending || session.removed || session.running || session.subagent !== null || machineBusy
+  const session = useSession(s => s)
+  const submitting = session.pendingSubmissions.length > 0
+  const disabled = pending || session.removed || session.running || session.subagent !== null || submitting
 
   const run = useCallback(async () => {
     if (pendingRef.current) return
