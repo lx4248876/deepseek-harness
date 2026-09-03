@@ -1,8 +1,8 @@
 # 项目骨架地图
 
 ## 元信息
-- base_ref: `280c931dd9`（master HEAD；alpha.4 升级合并 + dsh-minimal-turbo 重构后）
-- 更新说明: 增量更新（alpha.4 升级后核对：目录职责/关键链路仍准确；补充 `dsh-minimal-turbo/` 本地预设工具包一行）
+- base_ref: `2da10a3184`（master HEAD；alpha.5 升级合并后）
+- 更新说明: 增量更新（alpha.5 升级后核对：目录职责/关键链路仍准确；storage 域新增跨版本读兼容与 backup-and-skip，本地定制不受影响）
 
 ## 目录职责
 | 路径 | 一句话职责 |
