@@ -4,9 +4,9 @@
 
 ## 当前基线
 
-- 上游版本：`dsh-v0.1.2-alpha.5`
-- 本地基线：alpha.5 合并提交 `2da10a3184`，地图刷新提交 `a4ed9ef610`（`docs/project-map.md` base_ref = `2da10a3184`）
-- 根 `package.json` 与本地独有包 `@deepseek-ai/dsh-client-ui-handoff` 版本均为 `0.1.2-alpha.5`
+- 上游版本：`dsh-v0.1.2-rc.1`
+- 本地基线：rc.1 合并提交 `b4e225dc49`（`docs/project-map.md` base_ref = `b4e225dc49`）
+- 根 `package.json` 与本地独有包 `@deepseek-ai/dsh-client-ui-handoff` 版本均为 `0.1.2-rc.1`
 
 ## 远程布局
 
@@ -26,25 +26,25 @@
 | `dsh-pack.bat`（含 2 个后续 fix） | `dsh-pack.bat` | `b8346e431f`、`db90c5b976`、`d5b8b02bfb` |
 | `ui-handoff` 交接插件 | `packages/client/ui-handoff/`、`packages/bundle/web-app/cordis.patch.yml`、`tsconfig.base.json`、`tsconfig.client.json`、web 快照 | `2a5fdaaf21` |
 
-alpha.4 之后的本地演进提交（每次都要一并移植）：ui-handoff alpha.4 适配 `19d13dfca0`、minimal-turbo enhanced 重构 `280c931dd9`、版本对齐（本次 `7520c20fa0`）。
+alpha.4 之后的本地演进提交（每次都要一并移植）：ui-handoff alpha.4 适配 `19d13dfca0`、minimal-turbo enhanced 重构 `280c931dd9`、版本对齐（alpha.5 `7520c20fa0`、rc.1 `db2b2baff6`）。
 
-## 每次升级流程（alpha.N）
+## 每次升级流程（V = alpha.N 或 rc.N，分支名 `upgrade/V`）
 
 1. **冲突预检（动手前必做）**
    - `git fetch --tags --prune origin`
-   - 上游改动文件集：`git diff --name-status dsh-v0.1.2-alpha.(N-1) dsh-v0.1.2-alpha.N`
+   - 上游改动文件集：`git diff --name-status dsh-v0.1.2-<上一tag> dsh-v0.1.2-<新tag>`
    - 取交集：`tsconfig.base.json`、`pnpm-lock.yaml`、`packages/bundle/web-app/package.json`、`packages/bundle/web-app/cordis.patch.yml`、`packages/core/tools/package.json`、`packages/client/package.json` 等
    - API 契约核对：slot 声明（`conversation.input.right` 等）、`SessionEventWindow`/`SessionSnapshot`、invariant 配套规则、corner-shape 规则、`send_message`/`Session.events`、storage 域格式；重点是 API 漂移而非文件重叠。
 2. **保全 WIP**：`git stash push --include-untracked -m "wip: <说明>"`，确认 `git status` 干净；用户的 WIP 未经确认不提交，升级后必定 `stash pop` 恢复。
-3. **建升级分支**：`git checkout -b upgrade/alpha.N dsh-v0.1.2-alpha.N`
+3. **建升级分支**：`git checkout -b upgrade/V dsh-v0.1.2-V`
 4. **重放定制**：`git cherry-pick 923f10a725 24ed64842f b8346e431f db90c5b976 d5b8b02bfb 2a5fdaaf21`；冲突统一取升级分支侧（它包含全部本地定制 + 新上游）。
-5. **补本地演进**：依序 cherry-pick `19d13dfca0`（alpha.4 适配）、`280c931dd9`（enhanced 重构）；目标：`git diff master upgrade/alpha.N` 只剩上游 alpha.(N-1)→alpha.N 的差异 + `docs/project-map.md`。
-6. **版本对齐**：本地独有包（目前仅 `packages/client/ui-handoff/package.json`）版本 `alpha.(N-1)` → `alpha.N`，提交 `chore(ui-handoff): align package version with alpha.N`。
+5. **补本地演进**：依序 cherry-pick `19d13dfca0`（alpha.4 适配）、`280c931dd9`（enhanced 重构）；目标：`git diff master upgrade/V` 只剩上游版本差异 + 本地文档（`docs/project-map.md`、`UPGRADE.md`）。
+6. **版本对齐**：本地独有包（目前仅 `packages/client/ui-handoff/package.json`）版本改为新 tag 的版本号，提交 `chore(ui-handoff): align package version with V`。
 7. **全量验证**（见下节）。
-8. **合并回 master**：`git checkout master && git merge --no-ff upgrade/alpha.N -m "Merge branch 'upgrade/alpha.N'"`；add/add 冲突规则：ui-handoff 包取升级侧（`git checkout --theirs`），`docs/project-map.md` 保留 master 侧（`git checkout --ours`）稍后刷新。
+8. **合并回 master**：`git checkout master && git merge --no-ff upgrade/V -m "Merge branch 'upgrade/V'"`；add/add 冲突规则：ui-handoff 包取升级侧（`git checkout --theirs`），`docs/project-map.md` 与 `UPGRADE.md` 保留 master 侧（`git checkout --ours`）稍后刷新。
 9. **恢复 WIP**：`git stash pop`（应无冲突；若有冲突只处理用户文件，不覆盖用户内容）。
-10. **刷新地图**：`docs/project-map.md` 的 base_ref 改为合并提交哈希、更新说明行，提交 `docs(project-map): refresh base_ref after alpha.N upgrade`。
-11. **推送**：`git push fork master upgrade/alpha.N upgrade/alpha.(N-1) ...`（经用户确认后执行）。
+10. **刷新文档**：`docs/project-map.md` 的 base_ref 改为合并提交哈希、更新说明行；`UPGRADE.md` 的当前基线同步刷新；提交 `docs: refresh baseline after V upgrade`。
+11. **推送**：`git push fork master upgrade/V ...`（经用户确认后执行）。
 
 ## 验证命令（全部跑过且必须通过）
 
@@ -61,7 +61,7 @@ pnpm --filter @deepseek-ai/dsh-tools test
 pnpm --filter @deepseek-ai/dsh-subagent-in-process-driver test
 ```
 
-发布级可选：`DSH_SNAPSHOT=replay pnpm run test:web`（UI 无改动时可跳过）。alpha.5 基线：285 文件 / 3924 测试 / 1 skip，零失败。
+发布级可选：`DSH_SNAPSHOT=replay pnpm run test:web`（UI 无改动时可跳过）。rc.1 基线：285 文件 / 3924 测试 / 1 skip，零失败。
 
 ## 已知坑（历史教训）
 
