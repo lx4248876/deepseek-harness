@@ -1,8 +1,8 @@
 # 项目骨架地图
 
 ## 元信息
-- base_ref: `b4e225dc49`（master HEAD；rc.1 升级合并后）
-- 更新说明: 增量更新（rc.1 升级后核对：目录职责/关键链路仍准确；rc.1 仅全仓版本号提升，无源码/API 变更）
+- base_ref: `a4eaf21ebd`（master HEAD；0.1.3-alpha.1 升级合并后）
+- 更新说明: 增量更新（0.1.3-alpha.1 升级后核对：目录职责/关键链路仍准确；session v2 格式迁移、file-upload 新特性、ui-workspace search-reveal 重构，本地定制不受影响）
 
 ## 目录职责
 | 路径 | 一句话职责 |
