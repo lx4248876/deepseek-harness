@@ -4,9 +4,9 @@
 
 ## 当前基线
 
-- 上游版本：`dsh-v0.1.3-alpha.1`
-- 本地基线：0.1.3-alpha.1 合并提交 `a4eaf21ebd`（`docs/project-map.md` base_ref = `a4eaf21ebd`）
-- 根 `package.json` 与本地独有包 `@deepseek-ai/dsh-client-ui-handoff` 版本均为 `0.1.3-alpha.1`
+- 上游版本：`dsh-v0.1.3-alpha.2`
+- 本地基线：0.1.3-alpha.2 合并提交 `6e59696451`（`docs/project-map.md` base_ref = `6e59696451`）
+- 根 `package.json` 与本地独有包 `@deepseek-ai/dsh-client-ui-handoff` 版本均为 `0.1.3-alpha.2`
 
 ## 远程布局
 
@@ -61,15 +61,17 @@ pnpm --filter @deepseek-ai/dsh-tools test
 pnpm --filter @deepseek-ai/dsh-subagent-in-process-driver test
 ```
 
-发布级可选：`DSH_SNAPSHOT=replay pnpm run test:web`（UI 无改动时可跳过）。当前基线：`test:gui` 292 文件 / 4033 测试 / 4 skip，零失败。
+发布级可选：`DSH_SNAPSHOT=replay pnpm run test:web`（UI 无改动时可跳过）。当前基线：`test:gui` 304 文件 / 4208 测试 / 4 skip，零失败。
 
 ## 已知坑（历史教训）
 
 - **不要往 `src/` 落编译产物**（`*.js`/`*.d.ts`/`*.map`）：残留产物会被模块解析命中，`test:gui` 报 `TypeError: brandNumber is not a function`；用 `git status --porcelain` 过滤清理，且今后不在 `src` 下生成产物。
 - **跨版本切分支后先 `pnpm run clean`**：旧基线遗留的 `lib/types/*.js` 产物会在 typecheck 的 tsdown 阶段报 `MISSING_EXPORT`（0.1.3 曾因 `session-persistence` 导出改名触发）；`pnpm run clean` 删除 275+ 路径后重跑即过。
 - **`fs-ext`（0.1.3 新增原生依赖）在 Windows 编译失败**：本机缺 VS2022「使用 C++ 的桌面开发」工作负载时 `pnpm install --frozen-lockfile` 报 node-gyp `find VS` 错误；`@types/fs-ext` 已装则 **typecheck 不受影响**，可跳过该依赖的运行时测试继续验证；补装 VS C++ workload 或换 Linux 后即可完整 install。
+- **git fetch 网络不稳时用 HTTP/1.1**：`git fetch --tags --prune origin` 可能报 `RPC failed; curl 56/92` / `early EOF`；加 `-c http.version=HTTP/1.1` 重试即可（0.1.3-alpha.2 拉取时遇到）。GitHub API（`api.github.com/repos/deepseek-ai/deepseek-harness/tags`）可作备用确认新 tag。
+- **上游已吸收本地 open-folder 功能**：0.1.3-alpha.2 合入 `feat(workspace): open the workspace in local apps from the web UI (#3409)`（新包 `packages/client/ui-open-in-app`、`packages/host/open-in-app`），与本地 WIP 的 `openWorkspaceFolder` 前端注入功能重叠；业务分支合并 WIP 到新基线时，open-folder 增量优先改用上游实现，避免重复维护。
 - **inactive invariant 删除后的 README 原因句**必须匹配 `No invariant companion is published because ...`（反引号写法不匹配 `verify-package-invariants` 正则）。
 - **全圆角/胶囊**必须 `border-radius` ≥ 99px 与 `corner-shape: round` 同规则配对（ui-theme 测试拦截）。
-- **0.1.3 用户 WIP 结构性冲突**：本地未提交的 ui-workspace 增量（archived view / open local folder / copy 反馈）与上游 session-search-reveal 重构在 `Rows.tsx`、`WorkspaceBrowser.tsx`、`tree.client.spec.ts` 大块冲突，不宜自动合并；做法：`git stash apply 'stash@{0}'` 检视冲突 → `git reset --hard HEAD` 恢复 tracked → WIP 完整保留在 stash（untracked 一并保留），由用户在业务分支上基于 0.1.3 手工合并。
+- **0.1.3 用户 WIP 结构性冲突**：本地未提交的 ui-workspace 增量（archived view / open local folder / copy 反馈）与上游 session-search-reveal 重构在 `Rows.tsx`、`WorkspaceBrowser.tsx`、`tree.client.spec.ts` 大块冲突，不宜自动合并；做法：`git stash apply 'stash@{0}'` 检视冲突 → `git reset --hard HEAD` 恢复 tracked → WIP 完整保留在 stash（untracked 一并保留），由用户在业务分支上基于 0.1.3 手工合并。合并结果已落 `merge/0.1.3-wip-workspace` 分支（`73c093a630`，未推送）。
 - **上游已吸收的补丁**：alpha.3/4 上游已内置单参 `ToolArgsError(violations)`；本地双参版本是独有增量，若上游未来吸收才可删除本地版本。
 - **推送注意**：`origin` 是上游只读；推送一律走 `fork`。历史遗留 `stash@{1}`（旧 ToolArgsError 补丁）内容已随提交落地，未拍板删除前不要动。

@@ -1,8 +1,8 @@
 # 项目骨架地图
 
 ## 元信息
-- base_ref: `a4eaf21ebd`（master HEAD；0.1.3-alpha.1 升级合并后）
-- 更新说明: 增量更新（0.1.3-alpha.1 升级后核对：目录职责/关键链路仍准确；session v2 格式迁移、file-upload 新特性、ui-workspace search-reveal 重构，本地定制不受影响）
+- base_ref: `6e59696451`（master HEAD；0.1.3-alpha.2 升级合并后）
+- 更新说明: 增量更新（0.1.3-alpha.2 升级后核对：目录职责/关键链路仍准确；上游新增 `open-in-app`（Web UI 打开本地应用中的 workspace，对应本地未提交 WIP 的 open-folder 功能）、model-switch notice、session-query 惰性事件）
 
 ## 目录职责
 | 路径 | 一句话职责 |
