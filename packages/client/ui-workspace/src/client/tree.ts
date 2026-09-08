@@ -96,6 +96,12 @@ export interface SearchResultNode {
   snippet?: string
 }
 
+/** One archived-session row: session facts plus the owning Workspace display label. */
+export interface ArchivedNode extends SessionNode {
+  /** Owning Workspace title, the directory basename for ungrouped members, or '' when unknown. */
+  workspace: string
+}
+
 /** Bounded merged search projection plus the refine-query hint bit. */
 export interface SearchResultSet {
   items: readonly SearchResultNode[]
@@ -347,6 +353,42 @@ export function deriveFlat(
   }
   rows.sort(byRecency)
   return rows.map(session => sessionNode(session, descendants, pendingInteractions))
+}
+
+/**
+ * Derive the archived-session list in registry order. Every archived id whose
+ * summary has landed becomes one row — subagent-origin summaries stay hidden
+ * like every other shared-sidebar surface — and blank rows keep their empty
+ * canonical title so the renderer substitutes the localized New Session label.
+ * @param list - sessions list snapshot.
+ * @param workspaces - Workspace membership and display labels.
+ * @param archivedSessionIds - registry-global archive set in Host order.
+ * @param pendingInteractions - pending UI interactions by Session.
+ * @returns archived rows in registry order.
+ */
+export function deriveArchived(
+  list: SessionListState,
+  workspaces: readonly WorkspaceView[],
+  archivedSessionIds: readonly SessionId[],
+  pendingInteractions: SessionPendingInteractions,
+): ArchivedNode[] {
+  const descendants = indexSubagentDescendants(list.byId)
+  const workspaceBySession = new Map<SessionId, string>()
+  for (const workspace of workspaces) {
+    for (const sessionId of workspace.sessionIds) {
+      if (!workspaceBySession.has(sessionId)) workspaceBySession.set(sessionId, workspace.title)
+    }
+  }
+  const rows: ArchivedNode[] = []
+  for (const id of archivedSessionIds) {
+    const summary = list.byId[id]
+    if (summary === undefined || summary.origin === 'subagent') continue
+    rows.push({
+      ...sessionNode(summary, descendants, pendingInteractions),
+      workspace: workspaceBySession.get(id) ?? workspaceLabel(summary.cwd),
+    })
+  }
+  return rows
 }
 
 /**

@@ -80,6 +80,20 @@ export function apply(ctx: ClientContext): void {
     },
     createSession: workspaceId =>
       sessions.create(workspaceId === undefined ? undefined : { workspaceId }),
+    titleOf: sessionId => sessions.list.getSnapshot().byId[sessionId]?.title,
+    renameSession: async (sessionId, title) => {
+      const session = sessions.binding(sessionId)?.session
+      /* v8 ignore next 1 -- createSession's resolution guarantee makes the new session addressable */
+      if (session === undefined) return
+      try {
+        const result = await session.rename(title)
+        if (!result.ok) {
+          ctx.logger.warn(`ui-handoff: title carry failed: ${result.error.code}: ${result.error.message}`)
+        }
+      } catch (error) {
+        ctx.logger.warn(`ui-handoff: title carry failed: ${String(error)}`)
+      }
+    },
     openSession: (sessionId) => { sessions.open(sessionId) },
     archiveSession: async (sessionId) => { await uiWorkspace.archiveSession(sessionId) },
     workspaceOf: sessionId => workspaces.list.getSnapshot().items

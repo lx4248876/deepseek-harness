@@ -2,25 +2,38 @@
  * Workspace browser tree row components (figma Cell set 14:3080): pure presentational —
  * all data and callbacks arrive via props. Hover swaps (folder->chevron,
  * time->ellipsis, action buttons) are CSS-only. Row ... menus are visual-only
- * except workspace Rename/Delete and session Rename/Fork/Archive; the session
- * and workspace hover cards are suppressed while a menu is open.
+ * except workspace Rename/Delete, session Rename/Fork/Archive/Copy id, and the
+ * archived row's Restore; the session and workspace hover cards are suppressed
+ * while a menu is open.
  */
 import { useEffect, useRef, useState } from 'react'
 import clsx from 'clsx'
 import {
   HoverCard, IconAlarmClockOutline16, IconArchiveOutline20, IconBranchOutline16,
-  IconEditOutline16, IconEllipsisOutline16, IconFolderClose16, IconFolderOpen16,
-  IconPlusOutline16, IconTrashOutline16, IconTriangleRightFill14, Menu, relativeTime,
-  StateDot,
+  IconCopyOutline16, IconEditOutline16, IconEllipsisOutline16, IconFolderClose16, IconFolderOpen16,
+  IconPlusOutline16, IconTrashOutline16, IconTriangleRightFill14,
+  Menu, relativeTime,
+  StateDot, writeClipboard,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { StateDotState } from '@deepseek-ai/dsh-client-ui-primitives'
 import { abbreviateHomePath } from '@deepseek-ai/dsh-util-workspace-path'
 import type { WorkspaceBrowserProps } from '../contract/slots.ts'
-import type { GroupNode, SearchResultNode, SessionNode } from '../tree.ts'
+import type { ArchivedNode, GroupNode, SearchResultNode, SessionNode } from '../tree.ts'
 import css from './Rows.module.css'
 
 /** The standard locale seat, prop-passed from the browser root. */
 type RowTranslate = WorkspaceBrowserProps['t']
+
+/** How long the row menu keeps the "copied" success label, in ms. */
+const COPY_FEEDBACK_MS = 1000
+
+/** Write a session id to the clipboard; failures stay non-silent diagnostics. */
+function copySessionId(id: SessionNode['id'], onAccepted: (copied: boolean) => void): void {
+  void writeClipboard(String(id)).then((accepted) => {
+    if (accepted) onAccepted(true)
+    else console.warn('session id copy failed:', id)
+  })
+}
 
 /** Row display title: blank rows show the localized New Session label. */
 function displayTitle(node: SessionNode, t: RowTranslate): string {
@@ -410,6 +423,12 @@ export function SessionNodeItem({
     rowRef.current?.scrollIntoView({ block: 'nearest' })
     onReveal()
   }, [onReveal])
+  const [copied, setCopied] = useState(false)
+  useEffect(() => {
+    if (!copied) return
+    const timer = window.setTimeout(() => { setCopied(false) }, COPY_FEEDBACK_MS)
+    return () => { window.clearTimeout(timer) }
+  }, [copied])
   // Archive hides the row through the registry-global archive set and never
   // touches the session log, so it is not styled as destructive and needs no
   // confirmation dialog.
@@ -418,6 +437,7 @@ export function SessionNodeItem({
     { id: 'fork', label: t('menu.fork'), icon: <IconBranchOutline16 /> },
     // 20-native glyph in the menu's 16px icon slot (Menu.module.css .itemIcon).
     { id: 'archive', label: t('menu.archiveSession'), icon: <IconArchiveOutline20 size={16} /> },
+    { id: 'copyId', label: copied ? t('hover.copied') : t('menu.copySessionId'), icon: <IconCopyOutline16 /> },
   ]
   // Figma session cell: pad 8, status slot 16, then a 4px title gap.
   const ownRow = (
@@ -478,6 +498,12 @@ export function SessionNodeItem({
             onClose={() => { setMenuOpen(false) }}
             items={sessionMenuItems}
             onSelect={(id) => {
+              // Copy keeps the menu open so the transient success label is
+              // visible; every other row verb closes it.
+              if (id === 'copyId') {
+                copySessionId(node.id, setCopied)
+                return
+              }
               setMenuOpen(false)
               if (id === 'rename') onRename(node.id, row.title)
               if (id === 'fork') onFork(node.id)
@@ -509,5 +535,77 @@ export function SessionNodeItem({
       copyLabel={t('copy')}
       copiedLabel={t('hover.copied')}
     />
+  )
+}
+
+/**
+ * One 32px archived-session row: title, owning Workspace label, relative
+ * time, and the restore/copy menu. The row itself never navigates — the
+ * archived list has no open verb, only restore and copy.
+ * @param props.node - derived archived session node.
+ * @param props.now - epoch ms for relative-time formatting.
+ * @param props.onUnarchive - restore this session to its original position.
+ * @param props.t - the browser root's locale seat.
+ * @returns the archived session row.
+ */
+export function ArchivedSessionRow({ node, now, onUnarchive, t }: {
+  node: ArchivedNode
+  now: number
+  onUnarchive: (id: ArchivedNode['id']) => void
+  t: RowTranslate
+}) {
+  const title = node.blank ? t('session.new') : node.title
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [copied, setCopied] = useState(false)
+  useEffect(() => {
+    if (!copied) return
+    const timer = window.setTimeout(() => { setCopied(false) }, COPY_FEEDBACK_MS)
+    return () => { window.clearTimeout(timer) }
+  }, [copied])
+  const menuItems = [
+    { id: 'unarchive', label: t('menu.unarchiveSession'), icon: <IconArchiveOutline20 size={16} /> },
+    // A blank archived row has no content to copy; restore is its only verb.
+    ...(node.blank ? [] : [{
+      id: 'copyId',
+      label: copied ? t('hover.copied') : t('menu.copySessionId'),
+      icon: <IconCopyOutline16 />,
+    }]),
+  ]
+  return (
+    <div className={clsx(css.sessionRow, menuOpen && css.menuOpen)} role="treeitem">
+      <span className={css.slot} />
+      <span className={css.title}>{title}</span>
+      <span className={clsx(css.meta, css.archivedWorkspace)}>
+        {node.workspace || t('group.ungrouped')}
+      </span>
+      {!node.blank && <span className={css.time}>{timeLabel(node.updatedAt, now, t)}</span>}
+      <span className={css.rowActions}>
+        <Menu
+          open={menuOpen}
+          onClose={() => { setMenuOpen(false) }}
+          items={menuItems}
+          onSelect={(id) => {
+            if (id === 'copyId') {
+              copySessionId(node.id, setCopied)
+              return
+            }
+            setMenuOpen(false)
+            if (id === 'unarchive') onUnarchive(node.id)
+          }}
+          portal
+          closeOnPointerLeave
+          anchor={(
+            <button
+              type="button"
+              className={css.iconButton}
+              aria-label={t('actions.session.aria', { name: title })}
+              onClick={(e) => { e.stopPropagation(); setMenuOpen(v => !v) }}
+            >
+              <IconEllipsisOutline16 />
+            </button>
+          )}
+        />
+      </span>
+    </div>
   )
 }

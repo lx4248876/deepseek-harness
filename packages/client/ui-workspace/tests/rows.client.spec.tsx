@@ -6,8 +6,8 @@ import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import { makeTranslate } from '@deepseek-ai/dsh-client-test-runtime'
 import { zh as commonZh } from '@deepseek-ai/dsh-client-locale/src/locales/zh.ts'
 import type { RowDragProps } from '../src/client/rows/Rows.tsx'
-import { ProjectRowItem, SearchResultItem, SessionNodeItem } from '../src/client/rows/Rows.tsx'
-import type { GroupNode, SearchResultNode, SessionNode } from '../src/client/tree.ts'
+import { ArchivedSessionRow, ProjectRowItem, SearchResultItem, SessionNodeItem } from '../src/client/rows/Rows.tsx'
+import type { ArchivedNode, GroupNode, SearchResultNode, SessionNode } from '../src/client/tree.ts'
 import { zh } from '../src/client/locales.ts'
 
 afterEach(cleanup)
@@ -481,6 +481,103 @@ describe('workspace browser rows', () => {
     fireEvent.click(screen.getByRole('button', { name: '会话“One”的操作' }))
     fireEvent.keyDown(document, { key: 'Escape' })
     expect(screen.queryByRole('menu')).toBeNull()
+  })
+
+  it('copies a session id from the row menu with a transient success label', async () => {
+    vi.useFakeTimers()
+    const writeText = vi.fn(async () => {})
+    const restoreClipboard = installClipboard(writeText)
+    try {
+      const node: SessionNode = {
+        id: sid('s1'), title: 'One', blank: false, running: false,
+        runningSubagentCount: 0, completed: false, hasActiveSchedule: false, updatedAt: 0,
+      }
+      render(<SessionNodeItem node={node} currentId={undefined} now={0} onOpen={vi.fn()}
+        onRename={vi.fn()} onFork={vi.fn()} onArchive={vi.fn()} t={t} />)
+      fireEvent.click(screen.getByRole('button', { name: '会话“One”的操作' }))
+      await act(async () => { fireEvent.click(screen.getByRole('menuitem', { name: '复制会话 ID' })) })
+      expect(writeText).toHaveBeenCalledWith('s1')
+      // The copy action keeps the menu open so the success label is visible.
+      await act(async () => { await Promise.resolve(); await Promise.resolve() })
+      expect(screen.getByRole('menuitem', { name: '已复制' })).toBeTruthy()
+      act(() => { vi.advanceTimersByTime(1000) })
+      expect(screen.getByRole('menuitem', { name: '复制会话 ID' })).toBeTruthy()
+      // Copy never opened the session.
+      fireEvent.click(screen.getByRole('button', { name: '会话“One”的操作' }))
+      fireEvent.keyDown(document, { key: 'Escape' })
+      expect(screen.queryByRole('menu')).toBeNull()
+    } finally {
+      restoreClipboard()
+      vi.useRealTimers()
+    }
+  })
+
+  it('warns when the session id copy is refused', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const restoreClipboard = installClipboard(async () => { throw new Error('denied') })
+    try {
+      const node: SessionNode = {
+        id: sid('s1'), title: 'One', blank: false, running: false,
+        runningSubagentCount: 0, completed: false, hasActiveSchedule: false, updatedAt: 0,
+      }
+      render(<SessionNodeItem node={node} currentId={undefined} now={0} onOpen={vi.fn()}
+        onRename={vi.fn()} onFork={vi.fn()} onArchive={vi.fn()} t={t} />)
+      fireEvent.click(screen.getByRole('button', { name: '会话“One”的操作' }))
+      await act(async () => { fireEvent.click(screen.getByRole('menuitem', { name: '复制会话 ID' })) })
+      await act(async () => { await Promise.resolve(); await Promise.resolve() })
+      expect(warn).toHaveBeenCalledWith('session id copy failed:', sid('s1'))
+      expect(screen.queryByRole('menuitem', { name: '已复制' })).toBeNull()
+    } finally {
+      restoreClipboard()
+      warn.mockRestore()
+    }
+  })
+
+  it('renders an archived session row with workspace, time, restore, and copy actions', async () => {
+    vi.useFakeTimers()
+    const writeText = vi.fn(async () => {})
+    const restoreClipboard = installClipboard(writeText)
+    const onUnarchive = vi.fn()
+    try {
+      const node: ArchivedNode = {
+        id: sid('archived'), title: 'Archived', blank: false, workspace: 'Project',
+        running: false, runningSubagentCount: 0, completed: false, hasActiveSchedule: false, updatedAt: 0,
+      }
+      render(<ArchivedSessionRow node={node} now={0} onUnarchive={onUnarchive} t={t} />)
+      expect(screen.getByText('Archived')).toBeTruthy()
+      expect(screen.getByText('Project')).toBeTruthy()
+      expect(screen.getByText('刚刚')).toBeTruthy()
+      // The row itself never opens a session.
+      fireEvent.click(screen.getByRole('treeitem'))
+      fireEvent.click(screen.getByRole('button', { name: '会话“Archived”的操作' }))
+      fireEvent.click(screen.getByRole('menuitem', { name: '恢复会话' }))
+      expect(onUnarchive).toHaveBeenCalledWith(node.id)
+      expect(screen.queryByRole('menu')).toBeNull()
+      fireEvent.click(screen.getByRole('button', { name: '会话“Archived”的操作' }))
+      await act(async () => { fireEvent.click(screen.getByRole('menuitem', { name: '复制会话 ID' })) })
+      expect(writeText).toHaveBeenCalledWith('archived')
+      await act(async () => { await Promise.resolve(); await Promise.resolve() })
+      expect(screen.getByRole('menuitem', { name: '已复制' })).toBeTruthy()
+    } finally {
+      restoreClipboard()
+      vi.useRealTimers()
+    }
+  })
+
+  it('renders a blank archived row with the localized New Session label and restores it', () => {
+    const onUnarchive = vi.fn()
+    const node: ArchivedNode = {
+      id: sid('archived-blank'), title: '', blank: true, workspace: 'Project',
+      running: false, runningSubagentCount: 0, completed: false, hasActiveSchedule: false, updatedAt: 0,
+    }
+    render(<ArchivedSessionRow node={node} now={0} onUnarchive={onUnarchive} t={t} />)
+    expect(screen.getByText('新会话')).toBeTruthy()
+    expect(screen.getByText('Project')).toBeTruthy()
+    expect(screen.queryByText('刚刚')).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: '会话“新会话”的操作' }))
+    expect(screen.queryByRole('menuitem', { name: '复制会话 ID' })).toBeNull()
+    fireEvent.click(screen.getByRole('menuitem', { name: '恢复会话' }))
+    expect(onUnarchive).toHaveBeenCalledWith(node.id)
   })
 
 

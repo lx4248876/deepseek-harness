@@ -1,7 +1,8 @@
 /**
  * Handoff orchestration: drive the `/handoff` skill in the source Session,
  * capture the generated package from the closing assistant message, continue
- * it as the first message of a new Session, then archive the source Session.
+ * it as the first message of a new Session (carrying the source title so the
+ * new session keeps the old name), then archive the source Session.
  *
  * The module is pure over the injected faces so the pipeline is unit-testable
  * without cordis; the browser plugin supplies the real faces in `client/index.ts`.
@@ -48,6 +49,15 @@ export interface HandoffDeps {
   eventWindow(sessionId: SessionId): SessionEventWindow
   /** Create a Session, optionally inside a Workspace. */
   createSession(workspaceId: WorkspaceId | undefined): Promise<SessionId>
+  /** Read a Session's durable title, or undefined when it has none. */
+  titleOf(sessionId: SessionId): string | undefined
+  /**
+   * Best-effort set a Session's title. Resolves without throwing; an unknown
+   * Session or a rejected rename only skips the name carry.
+   * @param sessionId - Session to rename.
+   * @param title - durable title to apply.
+   */
+  renameSession(sessionId: SessionId, title: string): Promise<void>
   /** Select a Session as current. */
   openSession(sessionId: SessionId): void
   /** Archive a Session. */
@@ -105,6 +115,10 @@ export async function runHandoff(
     throw new HandoffError('skill-missing', `skill "${HANDOFF_SKILL_NAME}" is not available in this session`)
   }
 
+  // Capture the click-time name before the handoff turn can re-title the
+  // source; the continuation should keep the name the user saw.
+  const sourceTitle = deps.titleOf(sessionId)
+
   // Subscribe BEFORE prompting: a fast model could close its turn before a
   // post-prompt subscription observes the events.
   const fromSeq = lastSeqOf(deps.eventWindow(sessionId))
@@ -145,6 +159,11 @@ export async function runHandoff(
     newSessionId = await deps.createSession(workspaceId)
   } catch (error) {
     throw new HandoffError('create-failed', String(error))
+  }
+  // Carry the source title so the new session keeps the old name; the face is
+  // best-effort and must not fail the handoff when a rename is rejected.
+  if (sourceTitle !== undefined) {
+    await deps.renameSession(newSessionId, sourceTitle)
   }
   deps.openSession(newSessionId)
   try {

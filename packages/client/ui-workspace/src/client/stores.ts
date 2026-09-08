@@ -25,6 +25,8 @@ type WorkspaceViewState = {
   sessionOrderByAccount: Record<string, string[]>
   /** Last observed update timestamps per order account for one-time promotion events. */
   sessionUpdatedAtByAccount: Record<string, Record<string, number>>
+  /** The browsing region shows the archived-session list instead of the ordinary tree. */
+  showArchived: boolean
 }
 
 /**
@@ -43,6 +45,7 @@ type WorkspaceViewActions = {
     updatedAt: Record<string, number>,
   ) => void
   setSessionOrder: (draft: WorkspaceViewState, accountKey: string, order: string[]) => void
+  setShowArchived: (draft: WorkspaceViewState, showArchived: boolean) => void
 }
 
 /**
@@ -57,8 +60,12 @@ export function createWorkspaceViewStore(): EngineStoreHandle<WorkspaceViewState
       groupExpansion: {},
       sessionOrderByAccount: {},
       sessionUpdatedAtByAccount: {},
+      showArchived: false,
     }),
-    persist: 'dsh.workspace.view.v5',
+    // v6: rehydration replaces the whole value, so a v5 payload without the
+    // showArchived field would shed it at load; a new key keeps old view
+    // state from being read as missing state.
+    persist: 'dsh.workspace.view.v6',
     actions: {
       setGroupBy: (d, mode: SessionGroupBy) => { d.groupBy = mode },
       setOrderBy: (d, mode: SessionOrderBy) => { d.orderBy = mode },
@@ -82,6 +89,7 @@ export function createWorkspaceViewStore(): EngineStoreHandle<WorkspaceViewState
       setSessionOrder: (d, accountKey: string, order: string[]) => {
         d.sessionOrderByAccount[accountKey] = order
       },
+      setShowArchived: (d, showArchived: boolean) => { d.showArchived = showArchived },
     },
   })
 }

@@ -972,4 +972,45 @@ describe('registry-global session archive', () => {
     const upgraded = await harness({ pool: legacy })
     expect(upgraded.registry.archivedSessionIds).toEqual([])
   })
+
+  it('unarchives durably and leaves workspace accounting untouched', async () => {
+    const dir = await makeDir('unarchive-home')
+    const result = await harness({ sessions: [header('s1', dir, 100), header('s2', dir, 200)] })
+    const workspace = result.registry.list()[0]!
+    const accounted = [...workspace.sessionIds]
+    await result.registry.archiveSession(SessionId('s1'))
+    expect(result.registry.archivedSessionIds).toEqual(['s1'])
+
+    await result.registry.unarchiveSession(SessionId('s1'))
+    expect(result.registry.archivedSessionIds).toEqual([])
+    expect(storedState(result.pool).archivedSessionIds).toEqual([])
+    // Unarchiving is also a display-set write: the workspace account keeps its slot.
+    expect(workspace.sessionIds).toEqual(accounted)
+  })
+
+  it('unarchiving an id outside the archive set is an idempotent no-op', async () => {
+    const dir = await makeDir('unarchive-strays')
+    const result = await harness({ sessions: [header('s1', dir, 100)] })
+    await result.registry.archiveSession(SessionId('s1'))
+    const changesAfterArchive = result.changes.filter(change => change.table === '').length
+
+    await result.registry.unarchiveSession(SessionId('ghost'))
+    expect(result.registry.archivedSessionIds).toEqual(['s1'])
+    expect(storedState(result.pool).archivedSessionIds).toEqual(['s1'])
+    // The idempotent miss neither rewrites the medium nor emits a change.
+    expect(result.changes.filter(change => change.table === '').length).toBe(changesAfterArchive)
+  })
+
+  it('persists unarchive so a restart begins with an empty archive set', async () => {
+    const dir = await makeDir('unarchive-restart')
+    const pool = new MemoryMediaPool()
+    const first = await harness({ pool, sessions: [header('s1', dir, 100)] })
+    await first.registry.archiveSession(SessionId('s1'))
+    await first.registry.unarchiveSession(SessionId('s1'))
+    await first.fiber.dispose()
+
+    const second = await harness({ pool, sessions: [header('s1', dir, 100)] })
+    expect(second.registry.archivedSessionIds).toEqual([])
+    await second.fiber.dispose()
+  })
 })
