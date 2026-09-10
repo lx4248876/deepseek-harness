@@ -43,6 +43,8 @@ Node 侧是 host `cordis.yml` 行的惰性加载位。
 
 ## 已知限制与后续工作
 
+<a id="known-limitations-and-deferred-work"></a>
+
 - **无法恢复。** registry 只暴露 `archiveSession` 与 `archivedSessionIds`；上游不存在取消归档的操作，因此本面板提供复制会话 ID，而不是恢复某行。
 - **面板是投影，不是状态所有者。** 它渲染 Workspace 快照报告的既有内容；页面打开期间被归档的会话在该快照更新后出现。
 - **列表已丢弃的会话渲染其 id。** 标题来自会话列表，因此空白或已撤回的摘要回退为 id 字符串。
