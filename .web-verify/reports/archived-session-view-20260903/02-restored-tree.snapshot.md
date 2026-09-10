@@ -1,0 +1,76 @@
+- generic [active] [ref=f1e1]:
+  - generic [ref=f1e4]:
+    - generic [ref=f1e7]:
+      - generic [ref=f1e8]:
+        - button "新建会话" [ref=f1e9] [cursor=pointer]:
+          - generic [ref=f1e17]:
+            - generic [ref=f1e18]: DSH 本地构建
+            - generic [ref=f1e19]: 0.1.2-alpha.5-6ee1d89-dirty
+        - button "收起侧边栏" [ref=f1e20] [cursor=pointer]
+      - button "新建会话" [ref=f1e23] [cursor=pointer]:
+        - generic [ref=f1e26]: 新会话
+      - generic [ref=f1e29]:
+        - generic [ref=f1e30]:
+          - generic [ref=f1e31]: 工作区
+          - generic [ref=f1e335]:
+            - button "搜索会话" [ref=f1e336] [cursor=pointer]
+            - textbox "搜索会话…"
+          - generic [ref=f1e38]:
+            - button "视图选项" [ref=f1e40] [cursor=pointer]
+            - button "添加工作区" [ref=f1e43] [cursor=pointer]
+        - tree "会话" [ref=f1e341]:
+          - generic [ref=f1e342]:
+            - treeitem "deepseek-harness" [expanded] [ref=f1e344] [cursor=pointer]
+            - treeitem "新会话" [selected] [ref=f1e352] [cursor=pointer]
+            - treeitem "deepseek-harness 1小时" [ref=f1e356] [cursor=pointer]:
+              - generic [ref=f1e358]: deepseek-harness
+              - generic [ref=f1e359]: 1小时
+            - treeitem "deepseek-harness 3小时" [ref=f1e361] [cursor=pointer]:
+              - generic [ref=f1e363]: deepseek-harness
+              - generic [ref=f1e364]: 3小时
+            - treeitem "deepseek-harness 18小时" [ref=f1e366] [cursor=pointer]:
+              - generic [ref=f1e368]: deepseek-harness
+              - generic [ref=f1e369]: 18小时
+            - treeitem "deepseek-harness 18小时" [ref=f1e371] [cursor=pointer]:
+              - generic [ref=f1e373]: deepseek-harness
+              - generic [ref=f1e374]: 18小时
+            - generic [ref=f1e375]:
+              - treeitem "deepseek-harness 会话“deepseek-harness”的操作" [ref=f1e376] [cursor=pointer]:
+                - generic [ref=f1e378]: deepseek-harness
+                - button "会话“deepseek-harness”的操作" [ref=f1e381]
+              - status [ref=f1e386]
+            - button "展开其余 27 个会话" [ref=f1e387] [cursor=pointer]
+      - button "设置" [ref=f1e62] [cursor=pointer]
+    - generic [ref=f1e77]:
+      - generic [ref=f1e80]:
+        - generic [ref=f1e85]: 探索未至之境
+        - generic [ref=f1e86]: 预览版
+      - generic [ref=f1e87]:
+        - button "选择工作区" [ref=f1e88] [cursor=pointer]:
+          - generic [ref=f1e91]: deepseek-harness
+        - button "enhanced" [ref=f1e142] [cursor=pointer]
+      - generic [ref=f1e96]:
+        - generic [ref=f1e98]:
+          - textbox "描述你想要构建的内容… / 调用指令 @ 文件或对话" [ref=f1e150]
+          - generic [aria-hidden]: 描述你想要构建的内容… / 调用指令 @ 文件或对话
+        - generic [ref=f1e100]:
+          - generic [ref=f1e101]:
+            - button "指令" [ref=f1e151] [cursor=pointer]
+            - button "访问模式，当前：完全权限" [ref=f1e156] [cursor=pointer]:
+              - generic [ref=f1e162]: 完全权限
+          - generic [ref=f1e102]:
+            - button "交接" [ref=f1e168] [cursor=pointer]
+            - button "选择模型，当前 DeepSeek-V4-Flash，推理等级 High" [ref=f1e171] [cursor=pointer]:
+              - generic [ref=f1e172]: DeepSeek-V4-Flash
+              - generic [ref=f1e173]: High
+            - button "发送消息" [disabled] [ref=f1e176]
+    - generic [ref=f1e180]:
+      - generic [ref=f1e181]:
+        - generic: 详情
+        - button "关闭详情" [ref=f1e182] [cursor=pointer]
+      - generic [ref=f1e185]: 点击消息流中的工具行查看详情
+  - 'button "复制: deepseek-harness" [ref=f1e388] [cursor=pointer]':
+    - generic [ref=f1e389]:
+      - generic [ref=f1e390]: deepseek-harness
+      - generic [ref=f1e391]: 1天前
+      - generic [ref=f1e392]: 空闲

@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>改动讲解：归档会话视图 + 恢复 + 复制会话 ID</title>
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #fafafa; color: #1f2328; font: 16px/1.65 -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; }
+  main { max-width: 880px; margin: 0 auto; padding: 32px 20px 64px; }
+  h1 { font-size: 26px; margin: 0 0 8px; }
+  h2 { font-size: 20px; margin: 36px 0 10px; display: flex; align-items: center; gap: 8px; }
+  .lede { background: #eef4ff; border: 1px solid #c9d8f5; border-radius: 10px; padding: 14px 16px; margin: 16px 0; }
+  .card { background: #fff; border: 1px solid #e2e5ea; border-radius: 10px; padding: 14px 16px; margin: 10px 0; }
+  .step { cursor: pointer; }
+  .step summary { font-weight: 600; }
+  .badge { display: inline-block; border-radius: 999px; padding: 1px 10px; font-size: 12px; vertical-align: 1px; }
+  .ok { background: #e6f6ec; color: #146b3a; }
+  code, .path { font-family: ui-monospace, Consolas, "Microsoft YaHei", monospace; font-size: 13px; background: #f1f3f5; border-radius: 4px; padding: 1px 5px; word-break: break-all; }
+  details { margin: 8px 0; }
+  details pre { background: #0f172a; color: #dbeafe; padding: 12px; border-radius: 8px; overflow: auto; font-size: 12.5px; line-height: 1.5; }
+  .copy { position: relative; display: inline-block; }
+  .copy button { background: #2563eb; color: #fff; border: 0; border-radius: 8px; padding: 8px 16px; cursor: pointer; font-size: 14px; }
+  .copy button:hover { background: #1d4ed8; }
+  .copy small { margin-left: 8px; color: #146b3a; }
+  table { border-collapse: collapse; width: 100%; }
+  th, td { border: 1px solid #e2e5ea; padding: 8px 10px; text-align: left; font-size: 14px; }
+  th { background: #f1f3f5; }
+  ul { padding-left: 22px; }
+  @media (max-width: 640px) { body { font-size: 15px; } main { padding: 20px 12px 48px; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>📦 改动讲解：归档会话视图 + 恢复 + 复制会话 ID</h1>
+  <p class="path">docs/change-explainers/2026-09-03-archived-session-view.html &nbsp;·&nbsp; 2026-09-03</p>
+
+  <div class="lede">
+    <strong>一句话：</strong>以前归档一个会话后，它就从侧边栏彻底“看不见”，也没有任何入口能找回；
+    现在侧边栏多了一个 <strong>「已归档」</strong> 视图——能看档案、能一键<strong>恢复</strong>，
+    而且每个会话行都多了 <strong>「复制会话 ID」</strong>，方便你把会话编号复制出去用。
+  </div>
+
+  <h2>🏠 生活类比</h2>
+  <div class="card">
+    把会话想象成文件。以前“归档”等于把文件放进一个<strong>没有标签也没有把手的抽屉</strong>——文件没丢，但你打不开抽屉，只能干着急。
+    这次改动给抽屉加了<strong>透明标签和把手</strong>：打开「已归档」就能看到里面的文件（标题、放的位置、时间），
+    想用就按<strong>「恢复会话」</strong>把文件放回原来的文件夹。复制会话 ID 则像是给每个文件贴了一张可复制的编号标签，外人问“哪个文件？”时你直接粘贴编号即可。
+  </div>
+
+  <h2>🚶 你怎么走一遍</h2>
+  <div class="card step">
+    <details>
+      <summary>1️⃣ 归档：右键会话行 → 归档会话</summary>
+      <p>行从侧边栏消失。系统只是把会话编号记进一个全局“归档集合”（持久化，不删任何数据），并保留它在工作区里的原位置。</p>
+    </details>
+    <details>
+      <summary>2️⃣ 查看：视图选项 → 已归档</summary>
+      <p>侧边栏区头变成「已归档」，列出所有被隐藏的会话：标题、所属工作区、相对时间；此时搜索框隐藏。</p>
+    </details>
+    <details>
+      <summary>3️⃣ 恢复：归档行 → 恢复会话</summary>
+      <p>编号从归档集合移除，归档列表变空（显示「暂无已归档会话」），回到普通视图后该会话已经回到原来的位置。</p>
+    </details>
+    <details>
+      <summary>4️⃣ 复制 ID：任意非空会话行 → 复制会话 ID</summary>
+      <p>点击后剪贴板里就是该会话的编号，菜单项短暂显示「已复制」；复制失败只警告，不假装成功。</p>
+    </details>
+  </div>
+
+  <h2>🧩 动了哪几块</h2>
+  <table>
+    <tr><th>模块</th><th>原有职责</th><th>本次变化</th></tr>
+    <tr><td>后端注册表 <span class="path">packages/workspace/workspace/src/index.ts</span></td><td>归档会话（写入全局归档集合）</td><td>新增 <code>unarchiveSession</code>：幂等移除并持久化，保持记账位置</td></tr>
+    <tr><td>API <span class="path">packages/api/workspace-controller/src</span></td><td>workspace Remote 命令与客户端模型</td><td>新增 <code>workspace.unarchiveSession</code> Remote + 客户端转发；复用既有 follow 增量</td></tr>
+    <tr><td>Web 侧边栏 <span class="path">packages/client/ui-workspace/src/client</span></td><td>分组/平铺/搜索视图，会话行菜单</td><td>「已归档」视图模式 + 归档列表派生；行菜单加「复制会话 ID」；归档行加「恢复会话」</td></tr>
+    <tr><td>文案 <span class="path">…/locales.ts</span></td><td>中英文案字典</td><td>新增 4 个键：已归档 / 恢复会话 / 复制会话 ID / 暂无已归档会话</td></tr>
+    <tr><td>文档与笔记</td><td>README 已知限制、Agent Notes</td><td>解除“无取消归档入口”限制；新增/更新实现笔记；生成物（Remote 类型、API 目录、子系统页）同步</td></tr>
+  </table>
+
+  <h2>🧪 你怎么测（可复制）</h2>
+  <div class="card copy">
+    <button onclick="copyTest()">复制操作步骤</button>
+    <small id="copyHint"></small>
+    <pre id="testSteps" style="background:#f1f3f5;color:#1f2328;border:1px solid #e2e5ea;margin:10px 0 0">1. 打开 dsh Web（本地服务）并进入任意工作区
+2. 悬停一个会话行 → 点 ⋯ → 菜单应含「复制会话 ID」
+3. 点「复制会话 ID」→ 菜单项短暂变「已复制」，剪贴板里是该会话编号
+4. 同一菜单点「归档会话」→ 该行消失
+5. 点区头「视图选项」→「已归档」→ 应看到该会话（标题/工作区/时间）
+6. 归档行 →「恢复会话」→ 列表变「暂无已归档会话」，普通视图里行已回来</pre>
+  </div>
+
+  <h2>🔍 想看代码再点开</h2>
+  <details>
+    <summary>后端：幂等取消归档（registry）</summary>
+<pre>unarchiveSession(sessionId: SessionId): Promise<void> {
+  return this.enqueueOperation(async () => {
+    const state = this.requireState()
+    if (!state.archivedSessionIds.includes(sessionId)) return
+    await this.setState({ ...state, archivedSessionIds: state.archivedSessionIds.filter(id => id !== sessionId) })
+  })
+}</pre>
+  </details>
+  <details>
+    <summary>API：新增 Remote 方法与客户端转发</summary>
+<pre>@Remote('unarchiveSession')
+unarchiveSession(request: WorkspaceUnarchiveSessionRequest): Promise&lt;WorkspaceArchiveValue&gt; {
+  return this.commands.unarchiveSession(request)
+}
+
+// 客户端模型：成功后安装完整归档集合
+async unarchiveSession(sessionId) {
+  const result = await this.remote.unarchiveSession({ sessionId })
+  if (result.ok) this.installArchived(result.value.archivedSessionIds)
+  return result
+}</pre>
+  </details>
+  <details>
+    <summary>UI：已归档列表派生 + 菜单动作</summary>
+<pre>// tree.ts —— 归档视图派生（按归档顺序；摘要未到/子代理来源跳过）
+export function deriveArchived(list, workspaces, archivedSessionIds, pendingInteractions): ArchivedNode[] {
+  // … workspaceBySession 映射 …
+  for (const id of archivedSessionIds) {
+    const summary = list.byId[id]
+    if (summary === undefined || summary.origin === 'subagent') continue
+    rows.push({ ...sessionNode(summary, descendants, pendingInteractions), workspace: … })
+  }
+}
+
+// Rows.tsx —— 复制会话 ID（writeClipboard + 短暂“已复制”反馈）
+const menuItems = [
+  { id: 'rename', … }, { id: 'fork', … }, { id: 'archive', … },
+  { id: 'copyId', label: copied ? t('hover.copied') : t('menu.copySessionId'), icon: &lt;IconCopyOutline16 /&gt; },
+]</pre>
+  </details>
+  <details>
+    <summary>归档行：恢复 + 复制（blank 行只保留「恢复」）</summary>
+<pre>const menuItems = [
+  { id: 'unarchive', label: t('menu.unarchiveSession'), icon: &lt;IconArchiveOutline20 size={16} /&gt; },
+  ...(node.blank ? [] : [{ id: 'copyId', label: …, icon: &lt;IconCopyOutline16 /&gt; }]),
+]
+// 恢复不打开会话，保留“当前选中落入归档集合即清空”的既有规则</pre>
+  </details>
+
+  <h2>🛡️ 没动什么 / 还注意什么</h2>
+  <ul>
+    <li><strong>不删数据</strong>：归档/恢复只改显示过滤器，会话日志与记账位置原样保留。</li>
+    <li><strong>已归档视图不直接打开会话</strong>：想继续对话，先「恢复」再打开，保持原有导航语义。</li>
+    <li><strong>搜索仍排除归档会话</strong>：已归档视图是唯一入口，行为与你确认的范围一致。</li>
+    <li><strong>浏览器本地视图偏好键升级</strong>（v5→v6）：每个浏览器会重置一次侧边栏视图偏好（分组、展开、排序），仅影响本地显示。</li>
+    <li>复制依赖浏览器剪贴板 API；<code>writeClipboard</code> 有降级与失败反馈，不会假报成功。</li>
+  </ul>
+
+  <h2>✅ 我跑过的检查</h2>
+  <ul>
+    <li>后端/API/UI 定向测试：workspace 46/46、workspace-controller 42/42、ui-workspace 132/132（先 Red 后 Green）</li>
+    <li><code>pnpm run test:gui</code> 3944 passed；<code>verify-client-ui-i18n</code> 487 files OK；全量 <code>typecheck</code> exit 0；lint（包级 oxlint）EXIT 0</li>
+    <li><code>gen-cordis-catalog</code> / 笔记格式 / 翻译配对 / catalog 校验：绿（配对门禁剩余红项均为工作区中另一任务的未提交改动，与本改动无关）</li>
+    <li>真实浏览器页面验收：<span class="badge ok">PASS 5/0/0</span> <span class="path">.web-verify/reports/archived-session-view-20260903/report.md</span></li>
+    <li>说明：<code>DSH_SNAPSHOT=replay pnpm run test:web</code> 在本机环境大面积失败，均为环境/其它任务遗留问题（bash 工具缺失、Handoff 金样未更新等），与本改动无关；本功能所在 workspace-management 套件在本机被 skip。</li>
+  </ul>
+</main>
+<script>
+function copyTest() {
+  const text = document.getElementById('testSteps').innerText
+  const hint = document.getElementById('copyHint')
+  const done = () => { hint.textContent = '已复制 ✓'; setTimeout(() => { hint.textContent = '' }, 1500) }
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(done).catch(done)
+  } else {
+    done()
+  }
+}
+</script>
+</body>
+</html>
