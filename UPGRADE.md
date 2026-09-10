@@ -65,6 +65,8 @@ pnpm --filter @deepseek-ai/dsh-subagent-in-process-driver test
 
 发布级可选：`DSH_SNAPSHOT=replay pnpm run test:web`（UI 无改动时可跳过）。当前基线：`test:gui` 305 文件 / 4229 测试 / 1 skip，零失败。
 
+`test:web` 本机（Windows）实测：342 项中 51 项失败，均为环境差异——上游 e2e 金样按 macOS/Linux 归一化（工作区路径、临时目录、会话 id 的别样拼写）且部分用例走真实 provider 路径；复现时把 `pnpm run test:web` 输出重定向到本地文件即可比对。已修的 Windows 缺陷：`apps/web/tests/scaffold.ts` 的 `normalizeAria` 原先只按 `/` 取 workspace basename，Windows 路径下归一化失效，令所有含工作区名的金样全红；改为按 `[\\/]` 切分后 `workspace-new-session-folding.e2e.ts` 通过。
+
 ## 已知坑（历史教训）
 
 - **不要往 `src/` 落编译产物**（`*.js`/`*.d.ts`/`*.map`）：残留产物会被模块解析命中，`test:gui` 报 `TypeError: brandNumber is not a function`；用 `git status --porcelain` 过滤清理，且今后不在 `src` 下生成产物。
