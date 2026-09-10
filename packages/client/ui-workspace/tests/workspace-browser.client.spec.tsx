@@ -86,6 +86,7 @@ function mount(overrides: Partial<WorkspaceBrowserProps> = {}) {
     renameWorkspace: vi.fn(async () => {}),
     deleteWorkspace: vi.fn(async () => {}),
     archiveSession: vi.fn(async () => {}),
+    unarchiveSession: vi.fn(async () => {}),
     insertWorkspaceBefore: vi.fn(async () => {}),
     insertSessionBefore: vi.fn(async () => {}),
     createWorkspace: vi.fn(async () => workspace('created', [])),
@@ -161,7 +162,7 @@ describe('WorkspaceBrowser', () => {
     expect(screen.getByText('分组方式')).toBeTruthy() // the menu heading label
     expect(screen.getByRole('separator')).toBeTruthy()
     expect(screen.getAllByRole('menuitem').map(item => item.textContent)).toEqual([
-      '按工作区', '单列表', '手动排序', '最近更新',
+      '按工作区', '单列表', '手动排序', '最近更新', '已归档',
     ])
     expect(screen.getByRole('menuitem', { name: '按工作区' }).querySelector('svg')).toBeTruthy()
     expect(screen.getByRole('menuitem', { name: '手动排序' }).querySelector('svg')).toBeTruthy()
@@ -454,6 +455,63 @@ describe('WorkspaceBrowser', () => {
       await Promise.resolve()
       expect(warn).toHaveBeenCalledWith('session archive rejected:', rejection)
       expect(screen.getByText('alpha-s')).toBeTruthy()
+    } finally {
+      warn.mockRestore()
+    }
+  })
+
+  it('switches to the archived list, restores a session out of it, and shows the empty state', async () => {
+    const unarchiveSession = vi.fn(async () => {})
+    const b = mount({
+      useSessions: hook(sessionState([summary('kept-s', 2), summary('gone-s', 1)])),
+      useWorkspaces: hook(workspaceState([workspace('alpha', ['kept-s', 'gone-s'])], [sid('gone-s')])),
+      unarchiveSession,
+    })
+    // Normal grouped view keeps the archived row hidden.
+    expect(screen.queryByText('gone-s')).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: '视图选项' }))
+    fireEvent.click(screen.getByRole('menuitem', { name: '已归档' }))
+    expect(b.store.getSnapshot().showArchived).toBe(true)
+    expect(screen.getByText('已归档')).toBeTruthy()
+    expect(screen.getByText('gone-s')).toBeTruthy()
+    expect(screen.queryByText('kept-s')).toBeNull()
+    // Archived mode hides the search input entirely.
+    expect(screen.queryByPlaceholderText('搜索会话…')).toBeNull()
+
+    fireEvent.click(screen.getByRole('button', { name: '会话“gone-s”的操作' }))
+    fireEvent.click(screen.getByRole('menuitem', { name: '恢复会话' }))
+    expect(unarchiveSession).toHaveBeenCalledWith(sid('gone-s'))
+    // The archive-set echo removes the row and reveals the archived empty state.
+    rerender(b, { useWorkspaces: hook(workspaceState([workspace('alpha', ['kept-s', 'gone-s'])], [])) })
+    expect(screen.queryByText('gone-s')).toBeNull()
+    expect(screen.getByText('暂无已归档会话')).toBeTruthy()
+
+    // Toggling back returns to the grouped tree with its search input.
+    fireEvent.click(screen.getByRole('button', { name: '视图选项' }))
+    fireEvent.click(screen.getByRole('menuitem', { name: '已归档' }))
+    expect(b.store.getSnapshot().showArchived).toBe(false)
+    fireEvent.click(screen.getByText('alpha'))
+    expect(screen.getByText('kept-s')).toBeTruthy()
+    expect(screen.getByPlaceholderText('搜索会话…')).toBeTruthy()
+  })
+
+  it('logs and keeps the archived list when the unarchive call rejects', async () => {
+    const rejection = new Error('unarchive exploded')
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      mount({
+        useSessions: hook(sessionState([summary('gone-s', 1)])),
+        useWorkspaces: hook(workspaceState([workspace('alpha', ['gone-s'])], [sid('gone-s')])),
+        unarchiveSession: vi.fn(async () => { throw rejection }),
+      })
+      fireEvent.click(screen.getByRole('button', { name: '视图选项' }))
+      fireEvent.click(screen.getByRole('menuitem', { name: '已归档' }))
+      fireEvent.click(screen.getByRole('button', { name: '会话“gone-s”的操作' }))
+      fireEvent.click(screen.getByRole('menuitem', { name: '恢复会话' }))
+      await Promise.resolve()
+      await Promise.resolve()
+      expect(warn).toHaveBeenCalledWith('session unarchive rejected:', rejection)
+      expect(screen.getByText('gone-s')).toBeTruthy()
     } finally {
       warn.mockRestore()
     }

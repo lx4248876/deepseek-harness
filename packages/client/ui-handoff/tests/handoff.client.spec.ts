@@ -62,6 +62,8 @@ interface Bench {
     subscribeEvents: ReturnType<typeof vi.fn<HandoffDeps['subscribeEvents']>>
     eventWindow: ReturnType<typeof vi.fn<HandoffDeps['eventWindow']>>
     createSession: ReturnType<typeof vi.fn<HandoffDeps['createSession']>>
+    titleOf: ReturnType<typeof vi.fn<HandoffDeps['titleOf']>>
+    renameSession: ReturnType<typeof vi.fn<HandoffDeps['renameSession']>>
     openSession: ReturnType<typeof vi.fn<HandoffDeps['openSession']>>
     archiveSession: ReturnType<typeof vi.fn<HandoffDeps['archiveSession']>>
     workspaceOf: ReturnType<typeof vi.fn<HandoffDeps['workspaceOf']>>
@@ -98,6 +100,8 @@ function bench(): Bench {
       calls.push(`create:${workspaceId ?? 'none'}`)
       return sid('new')
     }),
+    titleOf: vi.fn<HandoffDeps['titleOf']>(() => undefined),
+    renameSession: vi.fn<HandoffDeps['renameSession']>(async (sessionId) => { calls.push(`rename:${sessionId}`) }),
     openSession: vi.fn<HandoffDeps['openSession']>((sessionId) => { calls.push(`open:${sessionId}`) }),
     archiveSession: vi.fn<HandoffDeps['archiveSession']>(async (sessionId) => { calls.push(`archive:${sessionId}`) }),
     workspaceOf: vi.fn<HandoffDeps['workspaceOf']>(() => wid('ws')),
@@ -135,6 +139,29 @@ describe('runHandoff', () => {
     b.emit()
     await pending
     expect(b.calls).toContain('create:none')
+  })
+
+  it('carries the source title to the new session before opening it', async () => {
+    const b = bench()
+    b.deps.titleOf.mockReturnValue('旧会话名')
+    const pending = runHandoff(b.deps, sid('old'), 'p')
+    await vi.waitFor(() => { expect(b.deps.prompt).toHaveBeenCalled() })
+    b.replace([assistant(2, 'pkg'), turnEnd(3)])
+    b.emit()
+    await expect(pending).resolves.toBe(sid('new'))
+    expect(b.deps.renameSession).toHaveBeenCalledWith(sid('new'), '旧会话名')
+    expect(b.calls).toEqual(['subscribe', 'prompt:old', 'create:ws', 'rename:new', 'open:new', 'prompt:new', 'archive:old'])
+  })
+
+  it('skips the title carry when the source has no durable title', async () => {
+    const b = bench()
+    const pending = runHandoff(b.deps, sid('old'), 'p')
+    await vi.waitFor(() => { expect(b.deps.prompt).toHaveBeenCalled() })
+    b.replace([assistant(2, 'pkg'), turnEnd(3)])
+    b.emit()
+    await pending
+    expect(b.deps.renameSession).not.toHaveBeenCalled()
+    expect(b.calls).toEqual(['subscribe', 'prompt:old', 'create:ws', 'open:new', 'prompt:new', 'archive:old'])
   })
 
   it('rejects with skill-missing before touching the session when the skill is absent', async () => {

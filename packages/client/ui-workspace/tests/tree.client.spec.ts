@@ -5,7 +5,7 @@ import type { SessionPendingInteractionBase } from '@deepseek-ai/dsh-client-ui-s
 import type { ScheduleId, ScheduleRecord } from '@deepseek-ai/dsh-schedule/client'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import {
-  deriveFlat, deriveGroups, deriveSearchResults, owningGroupKey, workspaceLabel,
+  deriveArchived, deriveFlat, deriveGroups, deriveSearchResults, owningGroupKey, workspaceLabel,
   UNGROUPED_KEY,
 } from '../src/client/tree.ts'
 import { createWorkspaceViewStore } from '../src/client/stores.ts'
@@ -489,17 +489,75 @@ describe('deriveSearchResults', () => {
   })
 })
 
+describe('deriveArchived', () => {
+  it('lists archived sessions in registry order with title, recency, and Workspace labels', () => {
+    const one = summary('one', 10, '/projects/first')
+    const two = summary('two', 20, '/projects/second')
+    const sessions = list(one, two)
+    const workspaces = [
+      workspace('first', ['one'], 'First'),
+      workspace('second', ['two'], 'Second'),
+    ]
+    const rows = deriveArchived(sessions, workspaces, archived('two', 'one'), noAttention)
+    expect(rows.map(row => row.id)).toEqual([sid('two'), sid('one')])
+    expect(rows[0]).toMatchObject({
+      title: 'two', updatedAt: 20, workspace: 'Second', blank: false,
+      running: false, runningSubagentCount: 0, completed: false, hasActiveSchedule: false,
+    })
+    expect(rows[1]).toMatchObject({ title: 'one', updatedAt: 10, workspace: 'First' })
+  })
+
+  it('projects pending-interaction state into archived rows', () => {
+    const awaiting = summary('awaiting', 10)
+    const attention: ReadonlyMap<SessionId, SessionPendingInteractionBase> = new Map([[
+      awaiting.id,
+      { key: 'question:1', kind: 'plan-review', sessionId: awaiting.id },
+    ]])
+    const rows = deriveArchived(
+      list(awaiting), [workspace('first', ['awaiting'], 'First')], archived('awaiting'), attention,
+    )
+    expect(rows[0]).toMatchObject({ id: awaiting.id, pendingInteraction: 'plan-review' })
+  })
+
+  it('falls back to the directory basename label outside Workspace accounts and skips missing summaries', () => {
+    const loose = summary('loose', 5, '/projects/loose-home')
+    expect(deriveArchived(list(loose), [], archived('loose'), noAttention)[0]!.workspace).toBe('loose-home')
+    const partial: SessionListState = {
+      ...list(summary('present', 1)),
+      ids: [sid('ghost'), sid('present')],
+    }
+    expect(deriveArchived(partial, [], archived('ghost', 'present'), noAttention).map(row => row.id))
+      .toEqual([sid('present')])
+  })
+
+  it('keeps blank archived rows with an empty canonical title', () => {
+    const blank = { ...summary('blank', 3), blank: true }
+    const rows = deriveArchived(
+      list(blank), [workspace('first', ['blank'], 'First')], archived('blank'), noAttention,
+    )
+    expect(rows[0]).toMatchObject({ id: blank.id, title: '', blank: true, updatedAt: 3, workspace: 'First' })
+  })
+
+  it('skips subagent-origin summaries like every shared-sidebar surface', () => {
+    const subagent = { ...summary('sub', 2), origin: 'subagent' as const }
+    expect(deriveArchived(list(subagent), [], archived('sub'), noAttention)).toEqual([])
+  })
+})
+
 describe('createWorkspaceViewStore', () => {
   it('stores grouping, ordering, Workspace expansion, and recent-session view order', () => {
     const store = createWorkspaceViewStore().create()
     expect(store.getSnapshot().groupBy).toBe('workspace')
     expect(store.getSnapshot().orderBy).toBe('updated')
+    expect(store.getSnapshot().showArchived).toBe(false)
     store.actions.setGroupBy('flat')
     store.actions.setOrderBy('updated')
+    store.actions.setShowArchived(true)
     store.actions.setGroupExpanded('alpha', true)
     store.actions.syncSessionOrderAccount('alpha', ['two', 'one'], { one: 1, two: 2 })
     store.actions.setSessionOrder('alpha', ['one', 'two'])
     expect(store.getSnapshot().groupBy).toBe('flat')
+    expect(store.getSnapshot().showArchived).toBe(true)
     expect(store.getSnapshot()).toMatchObject({
       orderBy: 'updated',
       groupExpansion: { alpha: true },
@@ -522,6 +580,10 @@ describe('createWorkspaceViewStore', () => {
     expect(snapshot.groupExpansion).toEqual({ '': true, alpha: true })
     expect(snapshot.sessionOrderByAccount).toEqual({ alpha: ['alpha-session'] })
     expect(snapshot.sessionUpdatedAtByAccount).toEqual({ alpha: { 'alpha-session': 2 } })
+  })
+
+  it('persists under the v6 key so a v5 payload without showArchived is never rehydrated', () => {
+    expect(createWorkspaceViewStore().spec.persist).toBe('dsh.workspace.view.v6')
   })
 })
 

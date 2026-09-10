@@ -12,7 +12,7 @@ Composer 工具行缺少把进行中任务移交到新会话的内建动作。�
 
 **新增 client 插件包 `@deepseek-ai/dsh-client-ui-handoff`，注册 `conversation.input.right` slot 条目 `id: 'handoff'`、`order: 90`。** 插件注册 typed locale namespace（`handoff`）的 `zh`/`en` 字典，并向 Composer 工具行注入一个 `onHandoff` verb。
 
-**`src/client/handoff.ts` 中的 `runHandoff(sessionId, promptText)` 以注入 session/workspace 面的纯函数持有整条管线。** 它先列出会话技能目录：目录中没有 `handoff` 技能时，在发出任何消息、创建新会话或归档之前抛 `HandoffError('skill-missing')`。随后在提示模型之前订阅会话事件窗口，从助手轮次文本投影交接包，在源工作区创建新会话、打开它、把交接包作为首条消息入队，最后归档源会话。失败映射为稳定 `HandoffError` 码（`skill-missing`、`no-package`、`prompt-rejected`、`create-failed`、`send-failed`、`archive-failed`）。
+**`src/client/handoff.ts` 中的 `runHandoff(sessionId, promptText)` 以注入 session/workspace 面的纯函数持有整条管线。** 它先列出会话技能目录：目录中没有 `handoff` 技能时，在发出任何消息、创建新会话或归档之前抛 `HandoffError('skill-missing')`。随后在提示模型之前捕获源会话标题并订阅会话事件窗口，从助手轮次文本投影交接包，在源工作区创建新会话、把捕获的标题带到新会话（尽力 rename）、打开它、把交接包作为首条消息入队，最后归档源会话。失败映射为稳定 `HandoffError` 码（`skill-missing`、`no-package`、`prompt-rejected`、`create-failed`、`send-failed`、`archive-failed`）；被拒绝的标题搬运只记录日志，绝不使交接失败。
 
 **`HandoffButton` 只负责 pending/error 呈现。** 管线运行期间空闲文案切换为 `生成中`/`Generating`；失败时在 `role="alert"` span 渲染本地化错误（`未找到 handoff 技能，请先安装到技能目录。` / "The handoff skill is not available; install it in your skills directory."）。会话处于已移除、运行中、子代理或 Composer 机器忙时按钮禁用。
 

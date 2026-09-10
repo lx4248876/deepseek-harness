@@ -34,10 +34,15 @@ beforeEach(() => { localStorage.clear() })
 async function createRuntime(): Promise<SlotTestRuntime> {
   const runtime = await SlotTestRuntime.create()
   runtime.releaseWorkspaceSource()
-  // The rename flow never picks a directory; the namespace only has to be there
-  // for ui-workspace's inject to settle.
+  // The rename flow never picks a directory nor opens a folder; the
+  // namespaces only have to be there for ui-workspace's inject to settle.
   const directoryPicker = {}
-  Object.assign(new TestRemote(runtime.ctx), { directoryPicker })
+  Object.assign(
+    new TestRemote(runtime.ctx, {
+      session: { openWorkspacePath: vi.fn(async () => ({ ok: true as const, value: { opened: true } })) },
+    }),
+    { directoryPicker },
+  )
   runtime.ctx.provide('remote.directoryPicker', directoryPicker as never)
   const locale = new LocaleRuntime(runtime.ctx)
   runtime.ctx.provide('locale', locale)

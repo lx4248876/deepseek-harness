@@ -14,6 +14,7 @@ import type {
   WorkspaceInsertSessionBeforeRequest,
   WorkspaceOrderValue,
   WorkspaceRenameRequest,
+  WorkspaceUnarchiveSessionRequest,
   WorkspaceValue,
   WorkspaceId,
   WorkspaceView,
@@ -84,6 +85,10 @@ class FakeWorkspaceRemote implements WorkspaceRemote {
     request: WorkspaceArchiveSessionRequest,
   ) => Promise<RemoteResult<WorkspaceArchiveValue>> = request =>
     Promise.resolve(remoteOk({ archivedSessionIds: [request.sessionId] }))
+  onUnarchiveSession: (
+    request: WorkspaceUnarchiveSessionRequest,
+  ) => Promise<RemoteResult<WorkspaceArchiveValue>> = request =>
+    Promise.resolve(remoteOk({ archivedSessionIds: [request.sessionId] }))
 
   create(request: WorkspaceCreateRequest): Promise<RemoteResult<WorkspaceCreateValue>> {
     this.record('create', request)
@@ -113,6 +118,11 @@ class FakeWorkspaceRemote implements WorkspaceRemote {
   archiveSession(request: WorkspaceArchiveSessionRequest): Promise<RemoteResult<WorkspaceArchiveValue>> {
     this.record('archiveSession', request)
     return this.onArchiveSession(request)
+  }
+
+  unarchiveSession(request: WorkspaceUnarchiveSessionRequest): Promise<RemoteResult<WorkspaceArchiveValue>> {
+    this.record('unarchiveSession', request)
+    return this.onUnarchiveSession(request)
   }
 
   async *follow(_signal?: AbortSignal): AsyncGenerator<WorkspaceFollowFrame> {}
@@ -306,6 +316,23 @@ describe('ClientWorkspaceModel', () => {
     remote.onArchiveSession = request => Promise.resolve(remoteOk({ archivedSessionIds: [request.sessionId] }))
     await expect(model.archiveSession(sid('fresh'))).resolves.toMatchObject({ ok: true })
     expect(model.getSnapshot().archivedSessionIds).toEqual(['fresh'])
+  })
+
+  it('installs unarchive echoes and leaves failed results unchanged', async () => {
+    const remote = new FakeWorkspaceRemote()
+    const model = modelFor(remote)
+    baseline(model, [], [sid('archived'), sid('hidden')])
+
+    remote.onUnarchiveSession = () => Promise.resolve(remoteOk({ archivedSessionIds: [sid('archived')] }))
+    await expect(model.unarchiveSession(sid('hidden'))).resolves.toMatchObject({ ok: true })
+    expect(remote.calls).toContainEqual({ method: 'unarchiveSession', request: { sessionId: 'hidden' } })
+    expect(model.getSnapshot().archivedSessionIds).toEqual(['archived'])
+
+    remote.onUnarchiveSession = () => Promise.resolve(workspaceError(
+      new RemoteError('session/not-found', 'missing', { sessionId: sid('missing') }),
+    ))
+    await expect(model.unarchiveSession(sid('missing'))).resolves.toMatchObject({ ok: false })
+    expect(model.getSnapshot().archivedSessionIds).toEqual(['archived'])
   })
 
   it('keeps the newest row and places Workspaces missing from partial orders last', async () => {

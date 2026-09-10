@@ -41,6 +41,7 @@ async function bench() {
     delete: vi.fn(async () => undefined),
     insertBefore: vi.fn(async () => undefined),
     archiveSession: vi.fn(async () => undefined),
+    unarchiveSession: vi.fn(async () => undefined),
     insertSessionBefore,
   } as never)
   ctx.provide('sessions', {
@@ -61,7 +62,8 @@ async function bench() {
   } as never)
   const pickDirectory = vi.fn(() => Promise.resolve({ ok: true as const, value: '/projects/picked' }))
   const directoryPicker = { pick: pickDirectory }
-  Object.assign(new TestRemote(ctx), { directoryPicker })
+  const openWorkspacePath = vi.fn(async () => ({ ok: true as const, value: { opened: true } }))
+  Object.assign(new TestRemote(ctx, { session: { openWorkspacePath } }), { directoryPicker })
   ctx.provide('remote.directoryPicker', directoryPicker as never)
   const locale = new LocaleRuntime(ctx)
   // These specs assert the shipped Chinese copy. There is no jsdom `window`
@@ -72,6 +74,7 @@ async function bench() {
   return {
     ctx, slots: ctx.get('slots') as SlotRegistry, locale, create, rename,
     insertSessionBefore, open, clear, search, renameSession, binding, fork, pickDirectory,
+    openWorkspacePath,
   }
 }
 
@@ -90,7 +93,7 @@ describe('ui-workspace apply', () => {
 
   it('declares the services it drives', () => {
     expect(inject).toEqual([
-      'slots', 'sessions', 'workspaces', 'locale', 'remote', 'remote.directoryPicker',
+      'slots', 'sessions', 'workspaces', 'locale', 'remote', 'remote.directoryPicker', 'remote.session',
     ])
   })
 
@@ -147,6 +150,9 @@ describe('ui-workspace apply', () => {
     expect(b.insertSessionBefore).toHaveBeenCalledWith('ws', 's1', 's2')
     await browser.createWorkspace({ path: '/tmp/browser-project' })
     expect(b.create).toHaveBeenCalledWith({ path: '/tmp/browser-project' })
+    const unarchive = vi.spyOn(b.ctx.uiWorkspace, 'unarchiveSession').mockImplementation(async () => {})
+    await browser.unarchiveSession('session' as never)
+    expect(unarchive).toHaveBeenCalledWith('session')
 
     const picker = (b.slots.entries('conversation.hero.workspace')[0]!.inject as () => WorkspacePickerInjected)()
     await picker.createWorkspace({ path: '/tmp/project' })

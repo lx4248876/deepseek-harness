@@ -208,6 +208,13 @@
   color: var(--dsw-alias-label-tertiary);
 }
 
+/* Archived rows carry their owning Workspace label between title and time. */
+.archivedWorkspace {
+  flex: none;
+  margin-right: 6px;
+  max-width: 40%;
+}
+
 .scheduleIndicator {
   display: inline-flex;
   flex: none;
