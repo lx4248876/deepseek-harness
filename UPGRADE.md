@@ -5,8 +5,9 @@
 ## 当前基线
 
 - 上游版本：`dsh-v0.1.3-alpha.2`
-- 本地基线：0.1.3-alpha.2 合并提交 `6e59696451`（`docs/project-map.md` base_ref = `6e59696451`）
+- 本地基线：0.1.3-alpha.2 升级合并 `6e59696451`；业务 WIP 合并后 `master` = `20800ca71c`（`docs/project-map.md` base_ref = `20800ca71c`）
 - 根 `package.json` 与本地独有包 `@deepseek-ai/dsh-client-ui-handoff` 版本均为 `0.1.3-alpha.2`
+- 业务增量已进 `master`：`merge/0.1.3-alpha.2-wip-workspace` → `20800ca71c`（archived 视图/恢复 + copy 反馈保留本地实现，open-folder 改用上游 `packages/client/ui-open-in-app`）；`merge/0.1.3-wip-workspace`（alpha.1 版）与 `stash@{1}` 已无用途
 
 ## 远程布局
 
@@ -25,6 +26,7 @@
 | `dsh-minimal-turbo` 预设工具包（`minimal`/`enhanced`） | `dsh-minimal-turbo/` | `24ed64842f` → enhanced 重构 `280c931dd9` |
 | `dsh-pack.bat`（含 2 个后续 fix） | `dsh-pack.bat` | `b8346e431f`、`db90c5b976`、`d5b8b02bfb` |
 | `ui-handoff` 交接插件 | `packages/client/ui-handoff/`、`packages/bundle/web-app/cordis.patch.yml`、`tsconfig.base.json`、`tsconfig.client.json`、web 快照 | `2a5fdaaf21` |
+| `ui-handoff` 的 doc 门禁登记与双语文档（见「已知坑」） | `scripts/verify-package-readme-model-experience.ts`（`SENTENCE_MODEL_EXPERIENCE` 增加 `packages/client/ui-handoff`）、`packages/client/ui-handoff/README{,.zh,.i18n.yaml}`、`docs/project-map{,.zh,.i18n.yaml}`、`dsh-minimal-turbo/README{,.zh,.i18n.yaml}`、`.agents/notes/implemented/feature/2026-08-31-composer-handoff-action.i18n.yaml` | 本次交付 `20800ca71c` |
 
 alpha.4 之后的本地演进提交（每次都要一并移植）：ui-handoff alpha.4 适配 `19d13dfca0`、minimal-turbo enhanced 重构 `280c931dd9`、版本对齐（alpha.5 `7520c20fa0`、rc.1 `db2b2baff6`）。
 
@@ -61,7 +63,7 @@ pnpm --filter @deepseek-ai/dsh-tools test
 pnpm --filter @deepseek-ai/dsh-subagent-in-process-driver test
 ```
 
-发布级可选：`DSH_SNAPSHOT=replay pnpm run test:web`（UI 无改动时可跳过）。当前基线：`test:gui` 304 文件 / 4208 测试 / 4 skip，零失败。
+发布级可选：`DSH_SNAPSHOT=replay pnpm run test:web`（UI 无改动时可跳过）。当前基线：`test:gui` 305 文件 / 4229 测试 / 1 skip，零失败。
 
 ## 已知坑（历史教训）
 
@@ -70,8 +72,12 @@ pnpm --filter @deepseek-ai/dsh-subagent-in-process-driver test
 - **`fs-ext`（0.1.3 新增原生依赖）在 Windows 编译失败**：本机缺 VS2022「使用 C++ 的桌面开发」工作负载时 `pnpm install --frozen-lockfile` 报 node-gyp `find VS` 错误；`@types/fs-ext` 已装则 **typecheck 不受影响**，可跳过该依赖的运行时测试继续验证；补装 VS C++ workload 或换 Linux 后即可完整 install。
 - **git fetch 网络不稳时用 HTTP/1.1**：`git fetch --tags --prune origin` 可能报 `RPC failed; curl 56/92` / `early EOF`；加 `-c http.version=HTTP/1.1` 重试即可（0.1.3-alpha.2 拉取时遇到）。GitHub API（`api.github.com/repos/deepseek-ai/deepseek-harness/tags`）可作备用确认新 tag。
 - **上游已吸收本地 open-folder 功能**：0.1.3-alpha.2 合入 `feat(workspace): open the workspace in local apps from the web UI (#3409)`（新包 `packages/client/ui-open-in-app`、`packages/host/open-in-app`），与本地 WIP 的 `openWorkspaceFolder` 前端注入功能重叠；业务分支合并 WIP 到新基线时，open-folder 增量优先改用上游实现，避免重复维护。
+- **本地新增的 client 插件包必须同时登记 doc 门禁，否则每次升级 `doc-sync` 都红**：新包 README 需满足 `verify-package-readme-model-experience`（在 `scripts/verify-package-readme-model-experience.ts` 的 `SENTENCE_MODEL_EXPERIENCE` 或 `NO_MODEL_EXPERIENCE_SECTION` 里登记，短式必须写 `Indirectly, through …`/`None, as …` 一句 + `#### KV Cache effect` 一段）与 `doc-standard.spec.ts`（frontmatter `kind`/`description` + `## Summary`/`## Table of Contents`/`### Dev Note`）。这些门禁脚本本身属于本地定制，升级 cherry-pick 后要重新应用。
+- **双语配对门禁覆盖全部在范围文档**：任何未配对的本地文档（`docs/project-map.md`、`dsh-minimal-turbo/README.md`、`packages/client/ui-handoff/README.md`、`.agents/notes/implemented/**` 笔记）都要补齐 `*.md` + `*.zh.md` + `*.i18n.yaml` 三件套，改完任一侧后用 `pnpm run verify-translation-pairing --write <pair>` 重录哈希；注意代码围栏内容两侧必须逐字节一致（README 目录树注释也要统一），锚点要两侧同时声明（`<a id="…"></a>`）。
+- **本地包进目录生成物**：`pnpm run gen-client-catalog` 与 `pnpm run gen-config-catalog` 会把本地包写进 `packages/extensions/cordis-client-runner/src/client/slot-catalog.ts` 与 `docs/config-catalog.md`（后者是配对文档，英文侧改了要同步 `docs/config-catalog.zh.md` 并重录 `i18n.yaml`）。
 - **inactive invariant 删除后的 README 原因句**必须匹配 `No invariant companion is published because ...`（反引号写法不匹配 `verify-package-invariants` 正则）。
 - **全圆角/胶囊**必须 `border-radius` ≥ 99px 与 `corner-shape: round` 同规则配对（ui-theme 测试拦截）。
-- **0.1.3 用户 WIP 结构性冲突**：本地未提交的 ui-workspace 增量（archived view / open local folder / copy 反馈）与上游 session-search-reveal 重构在 `Rows.tsx`、`WorkspaceBrowser.tsx`、`tree.client.spec.ts` 大块冲突，不宜自动合并；做法：`git stash apply 'stash@{0}'` 检视冲突 → `git reset --hard HEAD` 恢复 tracked → WIP 完整保留在 stash（untracked 一并保留），由用户在业务分支上基于 0.1.3 手工合并。合并结果已落 `merge/0.1.3-wip-workspace` 分支（`73c093a630`，未推送）。
+- **0.1.3 用户 WIP 结构性冲突**：本地未提交的 ui-workspace 增量（archived view / open local folder / copy 反馈）与上游 session-search-reveal 重构在 `Rows.tsx`、`WorkspaceBrowser.tsx`、`tree.client.spec.ts` 大块冲突，不宜自动合并；做法：`git stash apply 'stash@{0}'` 检视冲突 → `git reset --hard HEAD` 恢复 tracked → WIP 完整保留在 stash（untracked 一并保留），由用户在业务分支上基于 0.1.3 手工合并。合并结果已落 `merge/0.1.3-wip-workspace` 分支（`73c093a630`，保留作历史参照）；去除本地 open-folder、改用上游 `ui-open-in-app` 的重做版本为 `merge/0.1.3-alpha.2-wip-workspace`（`6a19eafa4b`），已并入 `master`（`20800ca71c`）。
 - **上游已吸收的补丁**：alpha.3/4 上游已内置单参 `ToolArgsError(violations)`；本地双参版本是独有增量，若上游未来吸收才可删除本地版本。
-- **推送注意**：`origin` 是上游只读；推送一律走 `fork`。历史遗留 `stash@{1}`（旧 ToolArgsError 补丁）内容已随提交落地，未拍板删除前不要动。
+- **推送注意**：`origin` 是上游只读；推送一律走 `fork`。
+- **stash 状态**：`stash@{1}`（旧 ToolArgsError 补丁，内容已落地）已于本次交付删除；`stash@{0}`（pre-0.1.3 原始业务 WIP）内容已被 `20800ca71c` 覆盖，确认无回退需求后可删。
