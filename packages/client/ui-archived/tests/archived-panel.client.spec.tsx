@@ -9,9 +9,9 @@ import { ArchivedPanel, type ArchivedPanelProps } from '../src/client/ArchivedPa
 import { ArchivedIcon } from '../src/client/ArchivedIcon.tsx'
 import { zh } from '../src/client/locales.ts'
 
-const writeClipboard = vi.fn(async () => true)
+const writeClipboard = vi.fn(async (_text: string): Promise<boolean> => true)
 vi.mock('@deepseek-ai/dsh-client-ui-primitives', () => ({
-  writeClipboard: (...args: unknown[]) => writeClipboard(...args),
+  writeClipboard: (text: string): Promise<boolean> => writeClipboard(text),
 }))
 
 afterEach(() => {
