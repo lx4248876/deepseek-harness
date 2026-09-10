@@ -18,7 +18,8 @@
 | web profile | `C:\Users\Administrator\.dsh\profiles\web` | bundles = `@deepseek-ai/dsh-base`、`@deepseek-ai/dsh-web-app`、`server-info`；`patchReload: live` |
 | `enhanced` 预设 | `C:\Users\Administrator\.dsh\.agent-presets\enhanced\` | 以 0.1.5 官方 `standard` 工具链为基底 + 本地强化 persona（`complete: true`，`text:` 已按上游破坏性变更改为 `prefix:`） |
 | `ui-handoff` 插件 | 包 tarball 在 `C:\A-codes\lix\dsh-plugins\`；profile 依赖 + `cordis.patch.yml` 的 `insert` 行 | 走 `dsh plugin --profile web add` 安装；浏览器 roster 由 profile patch 的顶层 `insert` 提供 |
-| fork 基线分支 | `upgrade/0.1.5-rc.1` | `dsh-v0.1.5-rc.1` + 8 个本地定制提交 + 预设重建 + 版本对齐；`typecheck` 与 `test:gui` 双绿 |
+| `ui-archived` 面板插件 | 同上（新包 `packages/client/ui-archived/`） | 用 rc.1 的全局面板 API（`main` 单元 key `archived` + `sidebar.panellist` 行）实现归档视图与复制会话 ID，无需打补丁任何已发布包 |
+| fork 基线分支 | `upgrade/0.1.5-rc.1` | `dsh-v0.1.5-rc.1` + 本地定制提交（8 个原有 + 预设重建 + 版本对齐 + 文档门禁修复 + 两个插件包）；`typecheck` 与 `test:gui` 双绿、`doc-sync` 34 门全绿 |
 | 迁移前备份 | `C:\Users\Administrator\Desktop\dsh-backup-20260910-133921` | `~/.dsh` 整份（sessions / storages / .agent-presets / profiles / 密钥 / 设置），1.6 GB |
 
 ## 重建步骤
@@ -57,8 +58,10 @@ npm install -g @deepseek-ai/dsh@<新版本>
 
 | 项 | 状态 |
 |---|---|
-| archived 视图 / 恢复 / 复制会话 ID | **未迁移**。上游 rc.1 的 `archivedSessionIds` 只是过滤器（官方 README 明写无视图与恢复面），且 `sidebar.workspaces` 是 single slot，没有可加菜单项的扩展点。只能提上游 PR 争取官方孔位，或本地打补丁维护 `dsh-client-ui-workspace` + `dsh-workspace` + `dsh-api-workspace-controller` 三个包 |
-| `ToolArgsError` 双参补丁 | **未迁移**。上游 rc.1 仍是单参 `ToolArgsError(violations)`；官方运行时下该改进缺失，需决定是否把 `@deepseek-ai/dsh-tools` 作为补丁包接入 |
-| `minimal` 预设 override | **建议退役**。上游 rc.1 的 minimal 已原生按平台分流（`!!js process.platform` 门控 + pwsh 孪生行），本地 override 的存在理由已被上游吸收 |
+| archived 视图 / 复制会话 ID | **已迁移**：`packages/client/ui-archived/` 用 rc.1 全局面板 API 做成纯插件，已在官方实例验收（侧栏「已归档会话」列出 105 个会话，复制会话 ID 动作可用） |
+| archived 恢复（unarchive） | **待上游**。registry 只有 `archiveSession`，没有取消归档的操作；按决定提上游 PR，本机在 PR 落地前无法恢复归档会话（仅能查看与复制 ID） |
+| `ToolArgsError` 双参补丁 | **已决定放弃**（小 DX 改进，不值得为 `@deepseek-ai/dsh-tools` 引入补丁包与双实例风险），官方运行时按上游单参行为运行 |
+| `minimal` 预设 override | **建议退役**。上游 rc.1 的 minimal 已原生按平台分流（`!!js process.platform` 门控 + pwsh 孪生行），本地 override 的存在理由已被上游吸收；未从仓库删除，待确认 |
 | `dsh-pack.bat` | 保持现状（纯打包脚本，与运行形态无关） |
 | fork 分支推送 | `upgrade/0.1.5-rc.1` 仅存本地，尚未推送 `fork` |
+| 面板测试 | `packages/client/ui-archived/` 暂无套件；仓库的覆盖率门禁按 per-file 100% 要求，补测试前该包不在 CI 覆盖内 |
